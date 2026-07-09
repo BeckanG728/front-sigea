@@ -1,0 +1,66 @@
+<hr />
+<div>
+  <div class="field-row" style="align-items:center; gap:12px">
+    <strong>Autenticación de doble factor (2FA)</strong>
+    <span class="badge" [class.badge--success]="isActive()" [class.badge--neutral]="!isActive()">
+      <span>{{ isActive() ? 'Activado' : 'Desactivado' }}</span>
+    </span>
+  </div>
+  @if (isActive()) {
+    <div class="flex gap-2 mt-2">
+      <button type="button" class="btn btn--outline" (click)="verQR()">
+        <i class="bi bi-eye"></i> Ver QR
+      </button>
+    </div>
+  } @else {
+    <button type="button" class="btn btn--dark mt-2" (click)="iniciarActivacion()">
+      <i class="bi bi-shield-check"></i> Activar 2FA
+    </button>
+  }
+</div>
+
+<app-modal [visible]="step1Visible()" title="Activar 2FA" (close)="step1Visible.set(false)">
+  <p>Por seguridad, ingresa tu contraseña actual:</p>
+  <div class="field" style="margin-top:8px">
+    <input type="password" #passwordInput placeholder="Contraseña actual" />
+  </div>
+  @if (step1Error()) {
+    <div class="alert alert--danger" style="margin-top:8px">
+      <i class="bi bi-exclamation-triangle alert__icon"></i>
+      <span>{{ step1Error() }}</span>
+    </div>
+  }
+  <div class="flex gap-2 mt-2" style="justify-content:flex-end">
+    <button type="button" class="btn btn--outline" (click)="step1Visible.set(false)">Cancelar</button>
+    <button type="button" class="btn btn--dark" (click)="confirmarPassword()">Confirmar</button>
+  </div>
+</app-modal>
+
+<app-modal [visible]="step2Visible()" title="Vincular Google Authenticator" (close)="step2Visible.set(false)">
+  <p>Escanea el código QR con la app <strong>Google Authenticator</strong>:</p>
+  <div style="text-align:center; margin:12px 0">
+    @if (qrDataUrl()) {
+      <img [src]="qrDataUrl()" style="width:180px;height:180px;image-rendering:pixelated;border:1px solid var(--color-border);border-radius:8px" />
+    } @else {
+      <p class="alert alert--warning" style="margin:0">No se pudo generar el QR.</p>
+    }
+  </div>
+  <p style="font-size:12px;color:var(--color-text-muted)">O ingresa manualmente este secreto en la app:</p>
+  <code style="display:block;text-align:center;padding:8px;background:var(--color-bg);border-radius:6px;font-size:13px;letter-spacing:2px;font-family:monospace">{{ generatedSecret() }}</code>
+  <div class="flex gap-2 mt-2" style="justify-content:flex-end">
+    <button type="button" class="btn btn--dark" (click)="step2Visible.set(false)">Listo, ya escaneé</button>
+  </div>
+</app-modal>
+
+<app-modal [visible]="qrModalVisible()" title="Código QR — Google Authenticator" (close)="qrModalVisible.set(false)">
+  <p>Escanea este código QR con la app Google Authenticator:</p>
+  <div style="text-align:center; margin:12px 0">
+    @if (qrDataUrl()) {
+      <img [src]="qrDataUrl()" style="width:180px;height:180px;image-rendering:pixelated;border:1px solid var(--color-border);border-radius:8px" />
+    } @else {
+      <p class="alert alert--warning" style="margin:0">No se pudo generar el QR.</p>
+    }
+  </div>
+  <p style="font-size:12px;color:var(--color-text-muted)">O ingresa manualmente:</p>
+  <code style="display:block;text-align:center;padding:8px;background:var(--color-bg);border-radius:6px;font-size:13px;letter-spacing:2px;font-family:monospace">{{ currentSecret() }}</code>
+</app-modal>

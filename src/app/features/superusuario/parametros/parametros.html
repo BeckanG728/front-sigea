@@ -1,0 +1,61 @@
+<div class="card" style="max-width:860px">
+    <div class="card__title"><i class="bi bi-gear"></i> Parámetros del sistema</div>
+
+    <form (submit)="guardar(); $event.preventDefault()">
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th style="width:60px">ID</th>
+              <th>Nombre del parámetro</th>
+              <th>Valor</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of data.parametrosLista(); track p.id) {
+              <tr>
+                <td class="text-muted">{{ p.id }}</td>
+                <td>{{ p.nombre_parametro }}</td>
+                <td>
+                  @if (p.id === 2) {
+                    <select style="padding:4px 8px; border:2px solid var(--color-border); border-radius:6px; width:100%"
+                            [value]="p.valor_parametro"
+                            (change)="valorEditado(p.id, $any($event.target).value)">
+                      <option value="PEN">PEN — Sol peruano</option>
+                      <option value="USD">USD — Dólar americano</option>
+                    </select>
+                  } @else {
+                    <input type="text"
+                           style="padding:4px 8px; border:2px solid var(--color-border); border-radius:6px; width:100%"
+                           [value]="p.valor_parametro"
+                           (input)="valorEditado(p.id, $any($event.target).value)" />
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <p class="note mt-2"><i class="bi bi-info-circle"></i> Los valores editados se guardan en la tabla de parámetros del sistema.</p>
+
+      @if (feedback()) {
+        <div class="alert alert--success">
+          <i class="bi bi-check-circle-fill alert__icon"></i>
+          <span>{{ feedback() }}</span>
+        </div>
+      }
+
+      <div class="flex gap-2 mt-3" style="justify-content:flex-end">
+        <button type="button" class="btn btn--outline" (click)="restaurar()">Restaurar valores</button>
+        <button type="submit" class="btn btn--dark">
+          @if (saving()) {
+            <i class="bi bi-check-lg"></i> {{ saving() }}
+          } @else {
+            <i class="bi bi-check-lg"></i> Guardar parámetros
+          }
+        </button>
+      </div>
+    </form>
+  </div>
+

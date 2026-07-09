@@ -1,0 +1,17 @@
+<div class="flex gap-1" style="justify-content:center">
+  @if (puedeVer()) {
+    <button class="btn btn--icon btn--ghost" (click)="view.emit()" title="Ver">
+      <i class="bi bi-eye"></i>
+    </button>
+  }
+  @if (puedeEditar()) {
+    <button class="btn btn--icon btn--ghost" (click)="edit.emit()" title="Editar">
+      <i class="bi bi-pencil"></i>
+    </button>
+  }
+  @if (puedeEliminar()) {
+    <button class="btn btn--icon btn--ghost" (click)="delete.emit()" title="Eliminar">
+      <i class="bi bi-trash"></i>
+    </button>
+  }
+</div>

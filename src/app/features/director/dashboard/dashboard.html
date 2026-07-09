@@ -1,0 +1,39 @@
+<div class="kpi-grid">
+    <div class="kpi">
+      <div class="kpi__value">{{ kpiMatriculas() }}</div>
+      <div class="kpi__label">Matrículas 2026</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi__value">{{ kpiAulas() }}</div>
+      <div class="kpi__label">Aulas registradas</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi__value kpi__value--danger">{{ kpiPagosPendientes() }}</div>
+      <div class="kpi__label">Pagos pendientes</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card__title"><i class="bi bi-clipboard-data"></i> Matrículas recientes — 2026</div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>#</th><th>Alumno</th><th>Aula</th><th>Fecha</th><th>Estado</th><th>Reg. por</th></tr>
+        </thead>
+        <tbody>
+          @for (m of matriculas(); track m.n) {
+            <tr>
+              <td>{{ pad(m.n) }}</td>
+              <td>{{ m.alumno }}</td>
+              <td>{{ m.aula }}</td>
+              <td>{{ m.fecha }}</td>
+              <td><span [class]="estadoBadge(m.estado)"><span>{{ m.estado }}</span></span></td>
+              <td>{{ m.registradoPor }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <p class="note"><i class="bi bi-eye"></i> Vista de lectura — no se permiten modificaciones</p>
+  </div>
+

@@ -1,0 +1,22 @@
+<div class="card">
+    <div class="card__title"><i class="bi bi-mortarboard"></i> Alumnos matriculados — 2026</div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Matríc.</th><th>Apellidos y nombres</th><th>Estado</th><th>Reg. por</th></tr>
+        </thead>
+        <tbody>
+          @for (al of alumnos(); track al.matricula) {
+            <tr>
+              <td>{{ al.matricula }}</td>
+              <td>{{ al.nombre }}</td>
+              <td><span [class]="estadoBadge(al.estado)"><span>{{ al.estado }}</span></span></td>
+              <td class="text-muted">{{ al.registradoPor }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <p class="note"><i class="bi bi-eye"></i> Vista de lectura — no se permiten modificaciones</p>
+  </div>
+

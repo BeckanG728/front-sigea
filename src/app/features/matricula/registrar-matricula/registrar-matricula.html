@@ -1,0 +1,45 @@
+<div class="split-layout">
+  <div class="card">
+    <div class="card__title"><i class="bi bi-pencil-square"></i> Nueva matrícula — Año académico 2026</div>
+
+    <div class="field-row--search field">
+      <div>
+        <label>Alumno</label>
+        <input value="Chinga Ramos, Carlos" readonly />
+      </div>
+      <button class="btn btn--outline"><i class="bi bi-search"></i> Buscar</button>
+    </div>
+
+    <div class="field-row--search field">
+      <div>
+        <label>Aula (nivel · grado · sección)</label>
+        <input value="Secundaria 1° A" readonly />
+      </div>
+      <button class="btn btn--outline"><i class="bi bi-search"></i> Buscar</button>
+    </div>
+
+    <div class="alert alert--info">
+      <i class="bi bi-info-circle alert__icon"></i>
+      <span>Cupo disponible: 34/35 alumnos</span>
+    </div>
+
+    <button class="btn btn--dark mt-3"><i class="bi bi-person"></i> Matricular</button>
+  </div>
+
+  <div class="card">
+    <div class="card__title">Cuotas a generar — 2026</div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>#</th><th>Concepto</th><th>Tipo</th><th>Monto</th><th>Obligatorio</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Matrícula</td><td>Fijo</td><td>S/ 200</td><td><i class="bi bi-check-lg" style="color:var(--color-success)"></i></td></tr>
+          <tr><td>2</td><td>Libro</td><td>Fijo</td><td>S/ 50</td><td><i class="bi bi-check-lg" style="color:var(--color-success)"></i></td></tr>
+          <tr><td>3</td><td>Marzo</td><td>Mensual</td><td>S/ 100</td><td><i class="bi bi-check-lg" style="color:var(--color-success)"></i></td></tr>
+          <tr><td>4</td><td>Abril</td><td>Mensual</td><td>S/ 100</td><td><i class="bi bi-check-lg" style="color:var(--color-success)"></i></td></tr>
+          <tr><td>5</td><td>Taller extra</td><td>Opcional</td><td>S/ 30</td><td><i class="bi bi-x-lg" style="color:var(--color-text-muted)"></i></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note mt-2"><i class="bi bi-info-circle"></i> Total: S/ 480 en cuotas. Las opcionales pueden excluirse.</p>
+  </div>
+</div>

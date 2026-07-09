@@ -1,0 +1,15 @@
+@if (visible()) {
+  <div class="modal-overlay" (click)="onOverlayClick($event)">
+    <div class="modal">
+      <div class="modal__header">
+        <h3 [innerHTML]="title()"></h3>
+        <button class="btn btn--icon btn--outline" (click)="close.emit()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="modal__body">
+        <ng-content />
+      </div>
+    </div>
+  </div>
+}

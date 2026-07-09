@@ -1,0 +1,44 @@
+<div class="card">
+  <div class="filter-bar">
+    <div class="field">
+      <label>Año</label>
+      <select><option>2026</option><option>2025</option></select>
+    </div>
+    <div class="field">
+      <label>Estado</label>
+      <select><option>Todos</option><option>Pendiente</option><option>Pagado</option></select>
+    </div>
+    <div class="field">
+      <label>&nbsp;</label>
+      <button class="btn btn--primary"><i class="bi bi-download"></i> Exportar CSV</button>
+    </div>
+  </div>
+</div>
+
+<div class="card mt-3">
+  <div class="card__title"><i class="bi bi-cash-stack"></i> Reporte de Deudas — 2026</div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Alumno</th><th>Documento</th><th>Concepto</th><th>Monto</th><th>Vencimiento</th><th>Días de atraso</th><th>Estado</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Chinga Ramos, Carlos</td><td>DNI 75412638</td><td>Marzo 2026</td><td>S/ 100</td><td>15/04/2026</td><td style="color:var(--color-danger)">85</td>
+          <td><span class="badge badge--danger"><span>Pendiente</span></span></td>
+        </tr>
+        <tr>
+          <td>Chinga Ramos, Carlos</td><td>DNI 75412638</td><td>Abril 2026</td><td>S/ 100</td><td>15/05/2026</td><td style="color:var(--color-danger)">55</td>
+          <td><span class="badge badge--neutral"><span>Bloqueado</span></span></td>
+        </tr>
+        <tr>
+          <td>López Díaz, Lucía</td><td>DNI 47112233</td><td>Abril 2026</td><td>S/ 100</td><td>15/05/2026</td><td style="color:var(--color-danger)">55</td>
+          <td><span class="badge badge--danger"><span>Pendiente</span></span></td>
+        </tr>
+        <tr>
+          <td>Quispe Meza, Pedro</td><td>DNI 52009871</td><td>Marzo 2026</td><td>S/ 100</td><td>15/04/2026</td><td style="color:var(--color-danger)">85</td>
+          <td><span class="badge badge--danger"><span>Pendiente</span></span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note mt-2"><i class="bi bi-info-circle"></i> Total deuda pendiente: <strong style="color:var(--color-danger)">S/ 400</strong> — 3 alumnos morosos.</p>
+</div>

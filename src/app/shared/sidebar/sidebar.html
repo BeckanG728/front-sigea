@@ -1,0 +1,50 @@
+<aside class="shell__sidebar sidebar">
+  @for (item of menuItems(); track $index) {
+    @if (item.type === 'group') {
+      <div class="sidebar__group">
+        <button class="sidebar__group-header" [class.is-collapsed]="isCollapsed()(item.dataGroup)"
+                (click)="toggleGroup(item.dataGroup)">
+          <i [class]="item.icon"></i><span>{{ item.group }}</span>
+          <i class="bi bi-chevron-left sidebar__group-toggle"></i>
+        </button>
+        <div class="sidebar__group-children" [class.is-collapsed]="isCollapsed()(item.dataGroup)">
+          @for (child of item.children; track ($index + '-' + child.type)) {
+            @if (child.type === 'subgroup') {
+              <div class="sidebar__subgroup">
+                <button class="sidebar__subgroup-header" [class.is-collapsed]="isCollapsed()(child.dataGroup)"
+                        (click)="toggleGroup(child.dataGroup)">
+                  <i [class]="child.icon"></i><span>{{ child.group }}</span>
+                  <i class="bi bi-chevron-left sidebar__subgroup-toggle"></i>
+                </button>
+                <div class="sidebar__subgroup-children" [class.is-collapsed]="isCollapsed()(child.dataGroup)">
+                  @for (subchild of child.children; track subchild.route) {
+                    <button class="sidebar__item sidebar__item--child"
+                            [class.active]="subchild.route === activeRoute()"
+                            [style.--role-color]="'var(--color-' + roleCss() + ')'"
+                            [routerLink]="subchild.route">
+                      <i [class]="subchild.icon"></i><span>{{ subchild.label }}</span>
+                    </button>
+                  }
+                </div>
+              </div>
+            } @else {
+              <button class="sidebar__item sidebar__item--child"
+                      [class.active]="child.route === activeRoute()"
+                      [style.--role-color]="'var(--color-' + roleCss() + ')'"
+                      [routerLink]="child.route">
+                <i [class]="child.icon"></i><span>{{ child.label }}</span>
+              </button>
+            }
+          }
+        </div>
+      </div>
+    } @else {
+      <button class="sidebar__item"
+              [class.active]="item.route === activeRoute()"
+              [style.--role-color]="'var(--color-' + roleCss() + ')'"
+              [routerLink]="item.route">
+        <i [class]="item.icon"></i><span>{{ item.label }}</span>
+      </button>
+    }
+  }
+</aside>

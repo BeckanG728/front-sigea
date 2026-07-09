@@ -1,0 +1,186 @@
+<div class="split-layout">
+    <div class="card">
+      <div class="flex-between" style="margin-bottom:12px">
+        <div class="card__title" style="border:none; margin:0; padding:0">
+          <i class="bi bi-people"></i> Listado de usuarios
+        </div>
+        <button class="btn btn--primary btn--sm" (click)="openNuevoModal()">
+          <i class="bi bi-person-plus"></i> Nuevo usuario
+        </button>
+      </div>
+
+      @if (loading()) {
+        <p class="note"><i class="bi bi-arrow-repeat"></i> Cargando usuarios...</p>
+      } @else if (loadError()) {
+        <div class="alert alert--danger">
+          <i class="bi bi-exclamation-triangle alert__icon"></i>
+          <span>{{ loadError() }}</span>
+        </div>
+      } @else {
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Nombre</th><th>Doc</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr></thead>
+            <tbody>
+              @for (u of usuarios(); track u.id) {
+                <tr [class.row--selected]="u.id === selectedUserId()"
+                    (click)="selectUser(u.id)" style="cursor:pointer">
+                  <td>{{ u.nombre }}</td>
+                  <td>{{ u.doc }}</td>
+                  <td>
+                    <span class="badge"
+                          [class.badge--su]="u.rol === 'superusuario'"
+                          [class.badge--director]="u.rol === 'director'"
+                          [class.badge--secretaria]="u.rol === 'secretaria'">
+                      <span>{{ u.rol === 'superusuario' ? 'superusuario' : u.rol }}</span>
+                    </span>
+                  </td>
+                  <td>
+                    <span class="badge"
+                          [class.badge--success]="u.estado === 'activo' && !u.bloqueado"
+                          [class.badge--danger]="u.estado === 'eliminado'"
+                          [class.badge--warning]="u.bloqueado">
+                      <span>{{ u.estado === 'activo' && !u.bloqueado ? 'activo' : u.estado === 'eliminado' ? 'eliminado' : 'bloqueado' }}</span>
+                    </span>
+                  </td>
+                  <td>
+                    <button type="button" class="btn btn--icon btn--outline btn--sm"
+                            title="{{ u.permisosVisibles ? 'Ocultar permisos' : 'Mostrar permisos' }}"
+                            (click)="$event.stopPropagation(); toggleVisibility(u.id)">
+                      <i class="bi" [class.bi-eye]="u.permisosVisibles" [class.bi-eye-slash]="!u.permisosVisibles" style="font-size:14px"></i>
+                    </button>
+                    @if (u.username !== auth.usuario() && !u.noEliminable) {
+                      <button type="button" class="btn btn--icon btn--outline btn--sm"
+                              title="Editar" (click)="$event.stopPropagation(); openEditarModal(u)">
+                        <i class="bi bi-pencil" style="font-size:14px"></i>
+                      </button>
+                      @if (!u.noEliminable) {
+                        <button type="button" class="btn btn--icon btn--outline btn--sm"
+                                title="Eliminar" (click)="$event.stopPropagation(); confirmEliminar(u)">
+                          <i class="bi bi-trash" style="font-size:14px"></i>
+                        </button>
+                      }
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        @if (isAdminSelected()) {
+          <p class="note mt-2"><i class="bi bi-info-circle"></i> admin no eliminable</p>
+        }
+      }
+    </div>
+
+    <div class="card">
+      <div class="card__title">
+        <i class="bi bi-lock"></i> Permisos — {{ selectedUser()?.nombre }}
+        @if (selectedUser()) {
+          <span class="badge"
+                [class.badge--su]="selectedUser()!.rol === 'superusuario'"
+                [class.badge--director]="selectedUser()!.rol === 'director'"
+                [class.badge--secretaria]="selectedUser()!.rol === 'secretaria'">
+            <span>{{ selectedUser()!.rol === 'superusuario' ? 'superusuario' : selectedUser()!.rol }}</span>
+          </span>
+        }
+      </div>
+      @if (selectedUser()?.permisosVisibles) {
+        <div style="font-size:12px; color:var(--color-text-muted); margin-bottom:8px">Módulos habilitados</div>
+        @for (m of data.modulos; track m.key) {
+          <label class="flex gap-2" style="align-items:center; padding:4px 0; font-size:13px">
+            <input type="checkbox" [checked]="!!permisosRol()[m.key]"
+                   (change)="toggleModulePerm(m.key, $event)" />
+            {{ m.label }}
+          </label>
+        }
+        <button class="btn btn--dark btn--block mt-3" (click)="applyPermisos()">
+          @if (applyMsg()) {
+            <i class="bi bi-check-lg"></i> {{ applyMsg() }}
+          } @else {
+            <i class="bi bi-check-lg"></i> Aplicar permisos
+          }
+        </button>
+        <p class="note mt-2"><i class="bi bi-info-circle"></i> Detalle de Ver/Crear/Editar/Eliminar/Imprimir por módulo en <a href="/su/permisos">Permisos</a></p>
+      } @else {
+        <p class="note mt-2"><i class="bi bi-slash-circle"></i> Los permisos de este usuario están ocultos. Usa el ícono del ojo en la tabla para mostrarlos.</p>
+      }
+    </div>
+  </div>
+
+<app-modal [visible]="nuevoModalVisible()" title="Nuevo usuario"
+           (close)="nuevoModalVisible.set(false)">
+  <form #nuevoForm (submit)="submitNuevo(nombreInput.value, apellidoInput.value, dniInput.value, rolSelect.value); $event.preventDefault()">
+    <div class="field">
+      <label>Nombres *</label>
+      <input #nombreInput name="nombre" placeholder="Ej. Juan" required />
+    </div>
+    <div class="field">
+      <label>Apellidos *</label>
+      <input #apellidoInput name="apellido" placeholder="Ej. Pérez" required />
+    </div>
+    <div class="field">
+      <label>DNI *</label>
+      <input #dniInput name="dni" placeholder="12345678" pattern="\d{8}" title="Debe tener exactamente 8 dígitos" required />
+    </div>
+    <div class="field">
+      <label>Rol *</label>
+      <select #rolSelect name="rol" required>
+        <option value="secretaria">Secretaria</option>
+        <option value="director">Director</option>
+      </select>
+    </div>
+    @if (nuevoError()) {
+      <div class="alert alert--danger">
+        <i class="bi bi-exclamation-triangle alert__icon"></i>
+        <span>{{ nuevoError() }}</span>
+      </div>
+    }
+    <p class="note mt-2"><i class="bi bi-info-circle"></i> El usuario se creará con la contraseña por defecto configurada en <a href="/su/parametros">Parámetros</a>: <strong>{{ data.parametros().claveDefecto }}</strong>. El usuario deberá cambiarla en su primer inicio de sesión.</p>
+    <div class="flex gap-2 mt-3" style="justify-content:flex-end">
+      <button type="button" class="btn btn--outline" (click)="nuevoModalVisible.set(false)">Cancelar</button>
+      <button type="submit" class="btn btn--dark"><i class="bi bi-check-lg"></i> Crear usuario</button>
+    </div>
+  </form>
+</app-modal>
+
+<app-modal [visible]="editarModalVisible()" title="Editar usuario"
+           (close)="editarModalVisible.set(false)">
+  @if (editandoUsuario(); as u) {
+    <form (submit)="submitEditar(editNombre.value, editDoc.value, editRol.value); $event.preventDefault()">
+      <div class="field">
+        <label>Nombre completo *</label>
+        <input #editNombre name="nombre" [value]="u.nombre" required />
+      </div>
+      <div class="field">
+        <label>Documento</label>
+        <input #editDoc name="doc" [value]="u.doc" />
+      </div>
+      <div class="field">
+        <label>Rol *</label>
+        <select #editRol name="rol" required>
+          <option value="secretaria" [selected]="u.rol === 'secretaria'">Secretaria</option>
+          <option value="director" [selected]="u.rol === 'director'">Director</option>
+          <option value="superusuario" [selected]="u.rol === 'superusuario'">Superusuario</option>
+        </select>
+      </div>
+      @if (editError()) {
+        <div class="alert alert--danger">
+          <i class="bi bi-exclamation-triangle alert__icon"></i>
+          <span>{{ editError() }}</span>
+        </div>
+      }
+      <div class="flex gap-2 mt-3" style="justify-content:flex-end">
+        <button type="button" class="btn btn--outline" (click)="editarModalVisible.set(false)">Cancelar</button>
+        <button type="submit" class="btn btn--dark"><i class="bi bi-check-lg"></i> Guardar cambios</button>
+      </div>
+    </form>
+  }
+</app-modal>
+
+<app-confirm-modal [visible]="eliminarModalVisible()"
+                   [title]="'Confirmar'"
+                   [message]="eliminarMensaje()"
+                   [confirmText]="eliminarAccion()"
+                   [variant]="eliminarVariant()"
+                   (confirm)="ejecutarEliminar()"
+                   (cancel)="eliminarModalVisible.set(false)"></app-confirm-modal>

@@ -1,0 +1,71 @@
+<div class="login-screen">
+  <div class="login-grid">
+    <div class="card login-card">
+      <div style="font-size:12px; font-weight:700; color:var(--color-text-muted); margin-bottom:var(--space-3)">
+        Sistema de Matrículas
+      </div>
+
+      <div style="display:flex; flex-direction:column; align-items:center; gap:6px; margin-bottom:var(--space-4)">
+        <div class="avatar"
+             style="width:48px;height:48px;font-size:20px;background:var(--color-info)">
+          <i class="bi bi-person"></i>
+        </div>
+        <strong>Iniciar Sesión</strong>
+      </div>
+
+      @if (error()) {
+        <div class="alert alert--danger" style="margin-bottom:var(--space-3);text-align:left">
+          <i class="bi bi-exclamation-triangle alert__icon"></i>
+          <span>{{ error() }}</span>
+        </div>
+      }
+
+      <form #f="ngForm">
+        <div class="field" style="text-align:left">
+          <label>Usuario</label>
+          <input name="usuario" [(ngModel)]="usuario" />
+        </div>
+        <div class="field" style="text-align:left">
+          <label>Contraseña</label>
+          <input name="clave" type="password" [(ngModel)]="password" />
+        </div>
+        <button type="button" class="btn btn--block btn--primary" (click)="login()">
+          <i class="bi bi-box-arrow-in-right"></i> Ingresar
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+@if (show2FA()) {
+  <div class="modal-overlay" style="position:fixed;inset:0;background:rgba(22,21,26,0.55);display:grid;place-items:center;z-index:100;padding:var(--space-4)">
+    <div class="modal" style="max-width:400px">
+      <div class="modal__header">
+        <h3>Verificación de doble factor</h3>
+        <button type="button" class="modal__close" (click)="cerrar2FA()">&times;</button>
+      </div>
+      <div style="text-align:center">
+        <div style="margin-bottom:var(--space-4)">
+          <i class="bi bi-shield-check" style="font-size:48px;color:var(--color-info)"></i>
+        </div>
+        <p style="margin-bottom:var(--space-3)">
+          Ingresa el código de 6 dígitos generado por<br />
+          <strong>Google Authenticator</strong>
+        </p>
+        <div class="field">
+          <input type="text" #codeInput2fa maxlength="6" placeholder="000000"
+                 style="text-align:center;font-size:24px;letter-spacing:8px;font-family:monospace" />
+        </div>
+        @if (twoFAError()) {
+          <div class="alert alert--danger" style="margin-top:8px">
+            <i class="bi bi-exclamation-triangle alert__icon"></i>
+            <span>{{ twoFAError() }}</span>
+          </div>
+        }
+        <button type="button" class="btn btn--block btn--dark mt-2" (click)="verificar2FA(codeInput2fa.value)">
+          <i class="bi bi-shield-check"></i> Verificar e ingresar
+        </button>
+      </div>
+    </div>
+  </div>
+}

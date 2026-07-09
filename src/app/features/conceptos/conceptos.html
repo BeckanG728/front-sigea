@@ -1,0 +1,96 @@
+<div class="card">
+    <div class="flex-between" style="margin-bottom:12px">
+      <div class="card__title" style="border:none;margin:0;padding:0"><i class="bi-receipt"></i> Conceptos — año 2026</div>
+      <button class="btn btn--outline btn--sm" (click)="clonar()"><i class="bi-files"></i> Clonar a 2027</button>
+    </div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>#</th><th>Concepto</th><th>Tipo</th><th>Monto</th><th>Orden cobro</th><th>Obligatorio</th><th>Estado</th><th>Acciones</th></tr></thead>
+        <tbody>
+          @for (c of conceptosVisibles; track c.orden) {
+            <tr [style.opacity]="!c.activo ? '.5' : undefined">
+              <td>{{ c.orden }}</td>
+              <td>{{ c.nombre }}</td>
+              <td>{{ c.tipo }}</td>
+              <td>S/ {{ c.monto }}</td>
+              <td>{{ c.orden }}</td>
+              <td>
+                @if (c.obligatorio) {
+                  <span class="badge badge--success"><span>sí</span></span>
+                } @else {
+                  <span class="badge badge--danger"><span>no</span></span>
+                }
+              </td>
+              <td>
+                @if (!c.activo) {
+                  <span class="badge badge--neutral"><span>eliminado</span></span>
+                } @else {
+                  <span class="badge badge--success"><span>activo</span></span>
+                }
+              </td>
+              <td>
+                @if (puedeEditar && c.activo) {
+                  <button type="button" class="btn btn--icon btn--outline btn--sm" (click)="editarConcepto(c)" title="Editar"><i class="bi-pencil" style="font-size:14px"></i></button>
+                }
+                @if (puedeEliminar) {
+                  <button type="button" class="btn btn--icon btn--outline btn--sm" (click)="eliminarConcepto(c)" [title]="c.activo ? 'Eliminar' : 'Restaurar'">
+                    @if (c.activo) {
+                      <i class="bi-trash" style="font-size:14px"></i>
+                    } @else {
+                      <i class="bi-arrow-counterclockwise" style="font-size:14px"></i>
+                    }
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <button class="btn btn--outline mt-3" (click)="nuevoConcepto()">+ Nuevo concepto</button>
+    <p class="note mt-2"><i class="bi-info-circle"></i> El orden define la secuencia de cobro — no se habilitará una cuota sin pagar la anterior</p>
+  </div>
+
+<!-- Editar / Nuevo Concepto Modal -->
+<app-modal [visible]="editarVisible" [title]="editarTitulo" (close)="cerrarEditar()">
+  <form #f="ngForm" (ngSubmit)="guardarConcepto()">
+    <div class="field">
+      <label>Nombre *</label>
+      <input name="nombre" [(ngModel)]="formData.nombre" required />
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Tipo</label>
+        <select name="tipo" [(ngModel)]="formData.tipo">
+          <option value="Fijo">Fijo</option>
+          <option value="Mensual">Mensual</option>
+          <option value="Opcional">Opcional</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Monto (S/) *</label>
+        <input name="monto" type="number" step="0.01" min="0.01" [(ngModel)]="formData.monto" required />
+      </div>
+    </div>
+    <label class="flex gap-2 mt-2" style="align-items:center;font-size:13px">
+      <input type="checkbox" name="obligatorio" [(ngModel)]="formData.obligatorio" />
+      Obligatorio
+    </label>
+    @if (editarError) {
+      <div class="alert alert--danger mt-2"><i class="bi-exclamation-triangle alert__icon"></i><span>{{ editarError }}</span></div>
+    }
+    <div class="flex gap-2 mt-3" style="justify-content:flex-end">
+      <button type="button" class="btn btn--outline" (click)="cerrarEditar()">Cancelar</button>
+      <button type="submit" class="btn btn--dark"><i class="bi-check-lg"></i> Guardar cambios</button>
+    </div>
+  </form>
+</app-modal>
+
+<!-- Confirmar eliminación / restauración -->
+<app-confirm-modal [visible]="confirmarEliminarVisible"
+                   title="Confirmar"
+                   [message]="confirmarMessage"
+                   [confirmText]="confirmarAccion === 'eliminar' ? 'Eliminar' : 'Restaurar'"
+                   [variant]="confirmarAccion === 'eliminar' ? 'danger' : 'dark'"
+                   (confirm)="confirmarEliminar()"
+                   (cancel)="confirmarEliminarVisible = false" />

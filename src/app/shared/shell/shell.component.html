@@ -1,0 +1,30 @@
+<div class="shell">
+  <app-sidebar
+    [menuItems]="menuItems"
+    [activeRoute]="activeRoute()"
+    [roleCss]="roleCss"
+    (logout)="logout()"
+  />
+
+  <header class="shell__header header">
+    <div class="header__title">
+      <i [class]="shellState.icon()"></i> {{ shellState.title() }}
+    </div>
+    <div class="header__session">
+      <div class="avatar" [style.background]="'var(--color-' + roleCss + ')'">
+        {{ roleInitials }}
+      </div>
+      <div>
+        <div style="font-weight:700">{{ currentUser }}</div>
+      </div>
+      <span class="badge" [class.badge--su]="roleCss==='su'" [class.badge--director]="roleCss==='director'" [class.badge--secretaria]="roleCss==='secretaria'">
+        <span>{{ roleBadgeLabel }}</span>
+      </span>
+      <button class="btn btn--outline btn--sm" (click)="logout()"><i class="bi bi-box-arrow-right"></i> Salir</button>
+    </div>
+  </header>
+
+  <main class="shell__main">
+    <router-outlet />
+  </main>
+</div>

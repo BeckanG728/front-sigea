@@ -1,0 +1,7 @@
+<app-modal [visible]="visible()" [title]="title()" (close)="cancel.emit()">
+  <p style="margin:0 0 16px">{{ message() }}</p>
+  <div class="flex gap-2" style="justify-content:flex-end">
+    <button type="button" class="btn btn--outline" (click)="cancel.emit()">{{ cancelText() }}</button>
+    <button type="button" class="btn btn--{{ variant() }}" (click)="confirm.emit()">{{ confirmText() }}</button>
+  </div>
+</app-modal>

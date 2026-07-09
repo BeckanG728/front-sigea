@@ -1,0 +1,55 @@
+<div class="field-row" style="max-width:520px">
+  <div class="field"><label>Año</label><select><option>2026</option></select></div>
+  <div class="field"><label>Alumno</label><input value="Chinga Ramos, Carlos" /></div>
+</div>
+
+<div class="alert alert--warning">
+  <i class="bi bi-exclamation-triangle alert__icon"></i>
+  <span>Deuda pendiente en año 2025 — S/ 100. No se podrá matricular en 2026 hasta regularizar.</span>
+</div>
+
+<div class="split-layout mt-3">
+  <div class="card">
+    <div class="card__title">Cuotas pendientes — Carlos Chinga · 2026</div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>#</th><th>Concepto</th><th>Monto</th><th>Estado</th><th>Acción</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>1</td><td>Matrícula</td><td>S/ 200</td>
+            <td><span class="badge badge--success"><span>Pagado</span></span></td>
+            <td><button class="btn btn--sm btn--outline"><i class="bi bi-file-text"></i> Recibo</button></td>
+          </tr>
+          <tr>
+            <td>2</td><td>Libro</td><td>S/ 50</td>
+            <td><span class="badge badge--success"><span>Pagado</span></span></td>
+            <td><button class="btn btn--sm btn--outline"><i class="bi bi-file-text"></i> Recibo</button></td>
+          </tr>
+          <tr>
+            <td>3</td><td>Marzo</td><td>S/ 100</td>
+            <td><span class="badge badge--danger"><span>Deuda</span></span></td>
+            <td><button class="btn btn--sm btn--primary"><i class="bi bi-cash"></i> Pagar</button></td>
+          </tr>
+          <tr>
+            <td>4</td><td>Abril</td><td>S/ 100</td>
+            <td><span class="badge badge--neutral"><span>Bloqueado</span></span></td>
+            <td><span class="text-muted" style="font-size:12px">requiere cuota #3</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note mt-2"><i class="bi bi-info-circle"></i> Las cuotas siguientes no podrán pagarse mientras existan cuotas anteriores pendientes.</p>
+  </div>
+
+  <div class="card">
+    <div class="card__title">Resumen</div>
+    <div class="text-muted" style="font-size:12px">Total pagado</div>
+    <div style="font-size:24px;font-weight:800">S/ 250</div>
+    <div class="text-muted mt-2" style="font-size:12px">Pendiente</div>
+    <div style="font-size:20px;font-weight:800;color:var(--color-danger)">S/ 100</div>
+    <div class="alert alert--info mt-3">
+      <i class="bi bi-info-circle alert__icon"></i>
+      <span>Al pagar se genera recibo electrónico con correlativo único.</span>
+    </div>
+  </div>
+</div>

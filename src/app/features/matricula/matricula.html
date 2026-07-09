@@ -1,0 +1,124 @@
+<div class="split-layout">
+    <div class="card">
+      <div class="card__title"><i class="bi-pencil-square"></i> Nueva matrícula — Año académico 2026</div>
+
+      <div class="field-row--search field">
+        <div>
+          <label>Alumno (ap. paterno, ap. materno, nombre — sin RUC)</label>
+          <input [value]="alumnoSeleccionado" readonly />
+        </div>
+        <button class="btn btn--outline" (click)="abrirBuscarAlumno()"><i class="bi-search"></i> Modal</button>
+      </div>
+
+      <div class="field-row--search field">
+        <div>
+          <label>Aula (nivel · grado · sección)</label>
+          <input [value]="aulaActual?.nivel + ' ' + aulaActual?.grado + ' ' + aulaActual?.seccion" readonly />
+        </div>
+        <button class="btn btn--outline" (click)="abrirBuscarAula()"><i class="bi-search"></i> Modal</button>
+      </div>
+
+      @if (aulaActual) {
+        @if (aulaActual.cupo >= aulaActual.max) {
+          <div class="alert alert--warning">
+            <i class="bi-exclamation-triangle alert__icon"></i>
+            <span>Límite de aula: {{ aulaActual.cupo }}/{{ aulaActual.max }} alumnos — llena</span>
+          </div>
+        } @else {
+          <div class="alert alert--info">
+            <i class="bi-info-circle alert__icon"></i>
+            <span>Cupo disponible: {{ aulaActual.cupo }}/{{ aulaActual.max }} alumnos</span>
+          </div>
+        }
+      }
+
+      @if (mostrarExito) {
+        <div class="alert alert--success" style="margin-top:8px">
+          <i class="bi-check-circle-fill alert__icon"></i>
+          <span>Matrícula registrada correctamente. Se generaron las cuotas del año 2026.</span>
+        </div>
+      }
+
+      <button class="btn btn--dark mt-3" (click)="matricular()"
+              [disabled]="!!(aulaActual && aulaActual.cupo >= aulaActual.max)"
+              [title]="(aulaActual && aulaActual.cupo >= aulaActual.max) ? 'Aula llena — no se puede matricular' : 'Registrar matrícula'">
+        <i class="bi-person"></i> Matricular
+      </button>
+    </div>
+
+    <div class="card">
+      <div class="card__title">Cuotas generadas — Carlos Chinga · 2026</div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>#</th><th>Concepto</th><th>Monto</th><th>Orden</th><th>Estado</th></tr></thead>
+          <tbody>
+            @for (c of cuotas; track c.orden) {
+              <tr>
+                <td>{{ c.orden }}</td>
+                <td>{{ c.concepto }}</td>
+                <td>S/ {{ c.monto }}</td>
+                <td>{{ c.orden }}</td>
+                <td>
+                  @if (c.estado === 'pagado') {
+                    <span class="badge badge--success"><span>Pagado</span></span>
+                  } @else if (c.estado === 'bloqueado') {
+                    <span class="badge badge--neutral"><span>Bloqueado</span></span>
+                  } @else {
+                    <span class="badge badge--danger"><span>Deuda</span></span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="note mt-2"><i class="bi-info-circle"></i> No se puede pagar la cuota 4 sin pagar la 3</p>
+    </div>
+  </div>
+<!-- Buscar Alumno Modal -->
+<app-modal [visible]="buscarAlumnoVisible" title="Buscar alumno" (close)="buscarAlumnoVisible = false">
+  <input placeholder="Chinga" style="width:100%;border:2px solid var(--color-border);padding:8px;margin-bottom:10px" />
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Ap. paterno</th><th>Ap. materno</th><th>Nombre</th><th></th></tr></thead>
+      <tbody>
+        @for (b of buscables; track b.paterno + b.materno + b.nombre; let i = $index) {
+          <tr style="cursor:pointer">
+            <td>{{ b.paterno }}</td>
+            <td>{{ b.materno }}</td>
+            <td>{{ b.nombre }}</td>
+            <td><button class="btn btn--sm btn--primary" (click)="seleccionarAlumno(i)">Sel.</button></td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <p class="note mt-2">1 - {{ buscables.length }} de {{ buscables.length }}</p>
+</app-modal>
+
+<!-- Buscar Aula Modal -->
+<app-modal [visible]="buscarAulaVisible" title="Buscar aula — 2026" (close)="buscarAulaVisible = false">
+  <input placeholder="Nivel, grado..." style="width:100%;border:2px solid var(--color-border);padding:8px;margin-bottom:10px" />
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Nivel</th><th>Grado</th><th>Sección</th><th>Alumnos</th><th></th></tr></thead>
+      <tbody>
+        @for (a of aulasActivas; track a.cod) {
+          <tr>
+            <td>{{ a.nivel }}</td>
+            <td>{{ a.grado }}</td>
+            <td>{{ a.seccion }}</td>
+            <td>{{ a.cupo }}/{{ a.max }}</td>
+            <td>
+              <button class="btn btn--sm" [class.btn--primary]="a.cupo < a.max" [class.btn--outline]="a.cupo >= a.max"
+                      [disabled]="a.cupo >= a.max" (click)="seleccionarAula(a.cod)">
+                Sel.
+              </button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <p class="note mt-2">{{ aulasActivas.length }} aulas</p>
+</app-modal>

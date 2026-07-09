@@ -1,0 +1,109 @@
+<div class="module-header" style="background:var(--color-director)">
+    <span><i class="bi bi-shield"></i> Auditoría - Matrícula</span>
+    <button class="btn btn--sm" style="background:#fff">
+      <i class="bi bi-download"></i> Exportar
+    </button>
+  </div>
+
+  <div class="card mt-3">
+    <div class="filter-bar">
+      <div class="field">
+        <label>Fecha</label>
+        <input type="text" placeholder="Buscar fecha..."
+          [ngModel]="filtros().fecha"
+          (ngModelChange)="filtros.set({...filtros(), fecha: $event}); onFilterChange()" />
+      </div>
+      <div class="field">
+        <label>Módulo</label>
+        <select [ngModel]="filtros().modulo"
+          (ngModelChange)="filtros.set({...filtros(), modulo: $event}); onFilterChange()">
+          <option value="">Todos</option>
+          @for (m of modulos(); track m) { <option [value]="m">{{ m }}</option> }
+        </select>
+      </div>
+      <div class="field">
+        <label>Usuario</label>
+        <select [ngModel]="filtros().usuario"
+          (ngModelChange)="filtros.set({...filtros(), usuario: $event}); onFilterChange()">
+          <option value="">Todos</option>
+          @for (u of usuarios(); track u) { <option [value]="u">{{ u }}</option> }
+        </select>
+      </div>
+      <div class="field">
+        <label>Operación</label>
+        <select [ngModel]="filtros().operacion"
+          (ngModelChange)="filtros.set({...filtros(), operacion: $event}); onFilterChange()">
+          <option value="">Todos</option>
+          @for (o of operaciones(); track o) { <option [value]="o">{{ o }}</option> }
+        </select>
+      </div>
+      <div class="field">
+        <label>&nbsp;</label>
+        <button class="btn btn--primary" (click)="onFilterChange()">
+          <i class="bi bi-search"></i> Buscar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mt-3">
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>N°</th>
+            <th>Fecha y hora</th>
+            <th>Usuario</th>
+            <th>Módulo</th>
+            <th>Tabla</th>
+            <th>Operación</th>
+            <th>Registro afectado</th>
+            <th>IP origen</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (ev of paged(); track ev.n) {
+            <tr>
+              <td>{{ ev.n }}</td>
+              <td>{{ ev.fecha }}</td>
+              <td>{{ ev.usuario }}</td>
+              <td>{{ ev.modulo }}</td>
+              <td>{{ ev.tabla }}</td>
+              <td>{{ ev.operacion }}</td>
+              <td>{{ ev.registro }}</td>
+              <td>{{ ev.ip }}</td>
+              <td><button class="btn btn--sm btn--outline">Ver</button></td>
+            </tr>
+          } @empty {
+            <tr><td colspan="9" class="text-muted" style="text-align:center;padding:24px">No se encontraron registros</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (totalPages() > 1) {
+      <div class="pagination">
+        <button [disabled]="page() <= 1" (click)="goToPage(page() - 1)">
+          <i class="bi bi-chevron-left"></i>
+        </button>
+        @for (p of pages(); track p) {
+          @if (p === '…') {
+            <span class="text-muted">…</span>
+          } @else {
+            <button [class.active]="page() === p" (click)="goToPage(p)">
+              {{ p }}
+            </button>
+          }
+        }
+        <button [disabled]="page() >= totalPages()" (click)="goToPage(page() + 1)">
+          <i class="bi bi-chevron-right"></i>
+        </button>
+      </div>
+    }
+
+    <div class="note mt-3">
+      <i class="bi bi-info-circle"></i>
+      Al hacer clic en 'Ver' se muestra el valor anterior vs. valor nuevo, IP de origen y módulo afectado.
+    </div>
+  </div>

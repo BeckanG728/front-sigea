@@ -1,0 +1,113 @@
+<div class="split-layout split-layout--wide"
+       [style.--role-color]="'var(--color-' + roleCss() + ')'">
+    <div class="card" style="align-self: start">
+      <div class="card__title"><i class="bi bi-people"></i> Usuarios</div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Nombre</th><th>Rol</th></tr></thead>
+          <tbody>
+            @for (u of data.usuarios(); track u.id) {
+              <tr [class.row--selected]="u.id === selectedUserId()"
+                  (click)="selectUser(u.id)" style="cursor:pointer">
+                <td>{{ u.nombre }}</td>
+                <td>
+                  <span class="badge"
+                        [class.badge--su]="u.rol === 'superusuario'"
+                        [class.badge--director]="u.rol === 'director'"
+                        [class.badge--secretaria]="u.rol === 'secretaria'">
+                    <span>{{ u.rol === 'superusuario' ? 'superusuario' : u.rol }}</span>
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+  </div>
+</div>
+
+    <div class="card card--permisos">
+      <div class="card__title">
+        <i class="bi bi-lock"></i> Permisos — {{ selectedUser()?.nombre }}
+        @if (selectedUser()) {
+          <span class="badge"
+                [class.badge--su]="selectedUser()!.rol === 'superusuario'"
+                [class.badge--director]="selectedUser()!.rol === 'director'"
+                [class.badge--secretaria]="selectedUser()!.rol === 'secretaria'">
+            <span>{{ roleCss() }}</span>
+          </span>
+        }
+      </div>
+      <div class="flex gap-2 mt-2" style="margin-bottom:8px">
+        <button class="btn btn--outline btn--sm" (click)="expandAll()">Expandir todos</button>
+        <button class="btn btn--outline btn--sm" (click)="collapseAll()">Colapsar todos</button>
+      </div>
+
+      <div class="perm-tree">
+        @for (item of arbolPlano(); track item.key) {
+          @if (item.tipo === 'grupo' || item.tipo === 'subgrupo') {
+            @let pk = item.key;
+            @let isOpen = expandedGrupos().has(pk);
+            <div class="perm-tree__section" style="--depth: {{ item.depth }}">
+              <div class="perm-row perm-row--parent">
+                <button type="button" class="perm-toggle"
+                        [class.is-open]="isOpen"
+                        (click)="toggleGrupo(pk)" aria-label="Expandir/colapsar {{ item.nombre }}">▸</button>
+                <input #parentCb type="checkbox"
+                       [checked]="isAllChecked(pk)"
+                       [attr.data-parent-key]="pk"
+                       (change)="onParentChange(pk, $event)" />
+                <i class="{{ item.icon }}"></i>
+                <span class="perm-tree__label">{{ item.nombre }}</span>
+              </div>
+            </div>
+          } @else if (item.tipo === 'hoja') {
+            <div class="perm-tree__section"
+                 [class.perm-tree__section--readonly]="item.readonly"
+                 style="--depth: {{ item.depth }}">
+              @if (item.readonly) {
+                <div class="perm-row">
+                  <span class="perm-toggle-spacer"></span>
+                  <span class="perm-toggle-spacer"></span>
+                  <i class="{{ item.icon }}"></i>
+                  <span>{{ item.nombre }}</span>
+                  <span class="text-muted" style="margin-left:auto">Permisos fijos</span>
+                </div>
+              } @else {
+                <div class="perm-row perm-row--leaf">
+                  <button type="button" class="perm-toggle"
+                          [class.is-open]="expandedHojas().has(item.key)"
+                          (click)="toggleHoja(item.key)">▸</button>
+                  <input #leafCb type="checkbox"
+                         [checked]="isLeafAllChecked(item.key)"
+                         [attr.data-leaf-key]="item.key"
+                         (change)="onLeafChange(item.key, $event)" />
+                  <i class="{{ item.icon }}"></i>
+                  <span class="perm-tree__label">{{ item.nombre }}</span>
+                </div>
+              }
+            </div>
+          } @else if (item.tipo === 'permiso') {
+            <div class="perm-tree__section perm-tree__section--perm" style="--depth: {{ item.depth }}">
+              <div class="perm-row perm-row--perm">
+                <span class="perm-toggle-spacer"></span>
+                <span class="perm-toggle-spacer"></span>
+                <input type="checkbox"
+                       [checked]="!!permState()[item.parentKey]?.[item.permKey]"
+                       (change)="onChildChange(item.parentKey, item.permKey, $event)" />
+                <span>{{ item.nombre }}</span>
+              </div>
+            </div>
+          }
+        }
+      </div>
+
+      <button class="btn btn--dark btn--block mt-3" (click)="applyPermisos()">
+        @if (applyMsg()) {
+          <i class="bi bi-check-lg"></i> {{ applyMsg() }}
+        } @else {
+          <i class="bi bi-check-lg"></i> Aplicar permisos
+        }
+      </button>
+    </div>
+  </div>
+
