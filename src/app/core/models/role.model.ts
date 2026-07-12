@@ -12,3 +12,9 @@ export const ROLES: Record<string, RoleInfo> = {
   director: { key: 'director', routePrefix: 'director', label: 'Director', initials: 'DI', css: 'director', badgeLabel: 'solo lectura' },
   secretaria: { key: 'secretaria', routePrefix: 'secretaria', label: 'Secretaria', initials: 'SE', css: 'secretaria', badgeLabel: 'operaciones' },
 };
+
+export const ROLE_KEY_MAP: Record<string, string> = {
+  SUPERUSUARIO: 'superusuario',
+  DIRECTOR: 'director',
+  SECRETARIA: 'secretaria',
+};

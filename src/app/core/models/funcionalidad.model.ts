@@ -8,6 +8,7 @@ export interface Permisos {
 
 export interface FuncionalidadNode {
   idFuncionalidad: number;
+  codigo: string;
   nombre: string;
   ruta?: string;
   icon: string;
