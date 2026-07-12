@@ -4,13 +4,13 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  token: string | null;
-  tokenType?: string;
-  expiresIn?: number;
+  token: string;
+  expiresIn: number;
   idUsuario: number;
-  rol: string;
-  requiere2FA: boolean;
-  funcionalidades?: import('./funcionalidad.model').FuncionalidadNode[];
+  nombreUsuario: string;
+  idRol: number;
+  nombreRol: string;
+  login2fa: boolean;
 }
 
 export interface Verify2FARequest {
@@ -20,11 +20,8 @@ export interface Verify2FARequest {
 
 export interface Verify2FAResponse {
   token: string;
-  tokenType: string;
   expiresIn: number;
   idUsuario: number;
-  rol: string;
-  funcionalidades?: import('./funcionalidad.model').FuncionalidadNode[];
 }
 
 export interface ChangePasswordRequest {

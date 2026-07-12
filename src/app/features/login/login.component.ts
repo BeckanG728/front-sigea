@@ -33,7 +33,7 @@ export class LoginComponent {
       takeUntilDestroyed(this.destroyRef)
     ).subscribe({
       next: (res) => {
-        if (res.requiere2FA) {
+        if (res.login2fa) {
           this.show2FA.set(true);
           this.twoFAError.set('');
         } else {

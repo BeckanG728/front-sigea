@@ -1,17 +1,19 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, of, tap } from 'rxjs';
+import { Observable, of, tap, switchMap, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   LoginRequest, LoginResponse,
   Verify2FARequest, Verify2FAResponse,
   ChangePasswordRequest, Enable2FARequest, Enable2FAResponse
 } from '../models/auth.model';
+import { ROLE_KEY_MAP } from '../models/role.model';
 import { DataService } from './data.service';
 import { FuncionalidadNode, Permisos } from '../models/funcionalidad.model';
 import { MenuEntry, SidebarGroup, SidebarLink, SidebarSubGroup } from '../models/menu.model';
 import { getDevTreeForRole } from '../data/dev-funcionalidades';
+import { CATALOGO_MENU } from '../data/catalogo-menu';
 
 export interface RoleInfo {
   key: string;
@@ -22,19 +24,13 @@ export interface RoleInfo {
   badgeLabel: string;
 }
 
-export const ROLES: { [key: string]: RoleInfo } = {
+export const ROLES_LOCAL: { [key: string]: RoleInfo } = {
   superusuario: { key: 'superusuario', routePrefix: 'su', label: 'Superusuario', initials: 'SU', css: 'su', badgeLabel: 'acceso total' },
   director: { key: 'director', routePrefix: 'director', label: 'Director', initials: 'DI', css: 'director', badgeLabel: 'solo lectura' },
   secretaria: { key: 'secretaria', routePrefix: 'secretaria', label: 'Secretaria', initials: 'SE', css: 'secretaria', badgeLabel: 'operaciones' },
 };
 
 const API_BASE = environment.apiUrl;
-
-const DEV_USERS = [
-  { username: 'superusuario', password: 'admin123', roleKey: 'superusuario', displayName: 'Admin' },
-  { username: 'director', password: 'director123', roleKey: 'director', displayName: 'Director' },
-  { username: 'secretaria', password: 'secretaria123', roleKey: 'secretaria', displayName: 'Secretaria' },
-];
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -49,6 +45,8 @@ export class AuthService {
   readonly secreto2FA = signal<string | null>(null);
   readonly requires2FA = signal(false);
   readonly funcionalidades = signal<FuncionalidadNode[] | null>(null);
+  readonly idUsuario = signal<number>(0);
+  readonly idRol = signal<number>(0);
 
   private pendingIdUsuario = 0;
   private pendingRolKey = '';
@@ -58,32 +56,34 @@ export class AuthService {
   }
 
   login(usuario: string, password: string): Observable<LoginResponse> {
-    if (environment.devMode) {
-      const dev = DEV_USERS.find(u => u.username === usuario && u.password === password);
-      if (dev) {
-        const tree = getDevTreeForRole(dev.roleKey);
-        const response: LoginResponse = {
-          token: btoa(`${dev.username}:${Date.now()}`),
-          idUsuario: 0,
-          rol: dev.roleKey,
-          requiere2FA: false,
-          funcionalidades: tree ?? undefined,
-        };
-        return of(response).pipe(
-          tap(res => this.saveSession(res.token!, res.rol, dev.displayName, res.funcionalidades))
-        );
-      }
-    }
     const body: LoginRequest = { usuario, password };
     return this.http.post<LoginResponse>(`${API_BASE}/api/auth/login`, body).pipe(
       tap(res => {
-        if (res.requiere2FA) {
+        if (res.login2fa) {
           this.pendingIdUsuario = res.idUsuario;
-          this.pendingRolKey = res.rol.toLowerCase();
+          this.pendingRolKey = ROLE_KEY_MAP[res.nombreRol] ?? '';
           this.requires2FA.set(true);
-        } else if (res.token) {
-          this.saveSession(res.token, res.rol, usuario, res.funcionalidades);
+        } else {
+          localStorage.setItem('token', res.token);
         }
+      }),
+      switchMap(res => {
+        if (res.login2fa) return of(res);
+
+        const roleKey = ROLE_KEY_MAP[res.nombreRol] ?? '';
+        const roleInfo = ROLES_LOCAL[roleKey];
+        if (!roleInfo) return of(res);
+
+        localStorage.setItem('role', roleKey);
+        localStorage.setItem('username', res.nombreUsuario);
+        localStorage.setItem('idUsuario', String(res.idUsuario));
+        localStorage.setItem('idRol', String(res.idRol));
+        this.role.set(roleInfo);
+        this.usuario.set(res.nombreUsuario);
+        this.idUsuario.set(res.idUsuario);
+        this.idRol.set(res.idRol);
+
+        return this.fetchPermisos().pipe(map(() => res));
       })
     );
   }
@@ -96,7 +96,16 @@ export class AuthService {
     return this.http.post<Verify2FAResponse>(`${API_BASE}/api/auth/login/verify-2fa`, body).pipe(
       tap(res => {
         this.requires2FA.set(false);
-        this.saveSession(res.token, res.rol, this.usuario() ?? '', res.funcionalidades);
+        localStorage.setItem('token', res.token);
+      }),
+      switchMap(res => {
+        const roleInfo = ROLES_LOCAL[this.pendingRolKey];
+        if (!roleInfo) return of(res);
+
+        localStorage.setItem('role', this.pendingRolKey);
+        this.role.set(roleInfo);
+
+        return this.fetchPermisos().pipe(map(() => res));
       })
     );
   }
@@ -139,6 +148,8 @@ export class AuthService {
     localStorage.removeItem('role');
     localStorage.removeItem('username');
     localStorage.removeItem('funcionalidades');
+    localStorage.removeItem('idUsuario');
+    localStorage.removeItem('idRol');
     this.role.set(null);
     this.usuario.set(null);
     this.isLoggedIn.set(false);
@@ -146,6 +157,8 @@ export class AuthService {
     this.dosFactorActivo.set(false);
     this.secreto2FA.set(null);
     this.requires2FA.set(false);
+    this.idUsuario.set(0);
+    this.idRol.set(0);
     this.router.navigate(['/login']);
   }
 
@@ -186,25 +199,50 @@ export class AuthService {
 
   // ─── Private ─────────────────────────────────────────────────────
 
-  private saveSession(token: string, rolDesdeApi: string, username: string, funcionalidades?: FuncionalidadNode[]): void {
-    const roleKey = rolDesdeApi.toLowerCase();
-    const role = ROLES[roleKey];
-    if (!role) return;
-    localStorage.setItem('token', token);
-    localStorage.setItem('role', roleKey);
-    localStorage.setItem('username', username);
-    if (funcionalidades) {
-      localStorage.setItem('funcionalidades', JSON.stringify(funcionalidades));
-      this.funcionalidades.set(funcionalidades);
-    } else {
-      const fallback = getDevTreeForRole(roleKey);
-      if (fallback) {
-        localStorage.setItem('funcionalidades', JSON.stringify(fallback));
-        this.funcionalidades.set(fallback);
+  private fetchPermisos(): Observable<FuncionalidadNode[]> {
+    const routePrefix = this.role()?.routePrefix ?? '';
+    return this.http.get<{ permisos: any[] }>(`${API_BASE}/api/funcionalidades/mis-permisos`).pipe(
+      tap(response => {
+        const enriched = this.enrichTree(response.permisos, routePrefix);
+        this.persistSession(enriched);
+      }),
+      map(response => this.enrichTree(response.permisos, routePrefix))
+    );
+  }
+
+  private enrichTree(nodes: any[], routePrefix: string): FuncionalidadNode[] {
+    return nodes.map(n => {
+      const entry = CATALOGO_MENU[n.codigo];
+      let ruta: string | undefined;
+      let icon = 'bi bi-circle';
+      if (entry) {
+        if (entry.ruta) {
+          ruta = entry.ruta.startsWith('/')
+            ? entry.ruta
+            : `/${entry.ruta.replace(':prefix', routePrefix)}`;
+        }
+        icon = entry.icono;
       }
-    }
-    this.role.set(role);
-    this.usuario.set(username);
+      const hijos = n.hijos && n.hijos.length > 0
+        ? this.enrichTree(n.hijos, routePrefix)
+        : [];
+
+      const node: FuncionalidadNode = {
+        idFuncionalidad: n.idFuncionalidad,
+        codigo: n.codigo,
+        nombre: n.nombre,
+        permisos: n.permisos,
+        icon,
+        hijos,
+      };
+      if (ruta) node.ruta = ruta;
+      return node;
+    });
+  }
+
+  private persistSession(arbol: FuncionalidadNode[]): void {
+    localStorage.setItem('funcionalidades', JSON.stringify(arbol));
+    this.funcionalidades.set(arbol);
     this.isLoggedIn.set(true);
   }
 
@@ -213,10 +251,14 @@ export class AuthService {
     if (!token) return;
     const roleKey = localStorage.getItem('role');
     const username = localStorage.getItem('username');
-    if (roleKey && username && ROLES[roleKey]) {
-      this.role.set(ROLES[roleKey]);
+    if (roleKey && username && ROLES_LOCAL[roleKey]) {
+      this.role.set(ROLES_LOCAL[roleKey]);
       this.usuario.set(username);
       this.isLoggedIn.set(true);
+      const idUsr = localStorage.getItem('idUsuario');
+      const idRl = localStorage.getItem('idRol');
+      if (idUsr) this.idUsuario.set(Number(idUsr));
+      if (idRl) this.idRol.set(Number(idRl));
       const raw = localStorage.getItem('funcionalidades');
       if (raw) {
         try {
