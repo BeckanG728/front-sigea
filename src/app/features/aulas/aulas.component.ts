@@ -1,11 +1,10 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ModalComponent } from '../../shared/modal/modal.component';
 import { ConfirmDialogComponent as ConfirmModalComponent } from '../../shared/confirm-dialog/confirm-dialog.component';
-import { AulasService } from './aulas.service';
+import { AulaApiService, AulaListado } from '../../core/services/aula-api.service';
 import { ShellStateService } from '../../core/services/shell-state.service';
 import { PermisosService } from '../../core/services/permisos.service';
-import { Aula, AlumnoAula } from '../../core/services/data.service';
 
 @Component({
   selector: 'app-aulas',
@@ -13,41 +12,64 @@ import { Aula, AlumnoAula } from '../../core/services/data.service';
   imports: [ModalComponent, ConfirmModalComponent, FormsModule],
   templateUrl: './aulas.html',
 })
-export class AulasComponent {
-  private aulasService = inject(AulasService);
+export class AulasComponent implements OnInit {
+  private aulaApi = inject(AulaApiService);
   private shellState = inject(ShellStateService);
   private permisos = inject(PermisosService);
+
+  readonly aulas = this.aulaApi.aulas;
+  readonly alumnosAula = this.aulaApi.alumnosAula;
+  readonly niveles = this.aulaApi.niveles;
+  readonly grados = this.aulaApi.grados;
+  readonly anioActivo = this.aulaApi.anioActivo;
+  readonly loading = this.aulaApi.loading;
+
+  selectedId = signal<number | null>(null);
+  editarVisible = false;
+  confirmarEliminarVisible = false;
+  nuevaAulaVisible = false;
+  editarError = '';
+  nuevaAulaError = '';
+  confirmarMessage = '';
+  private editarAulaRef?: AulaListado;
+  private eliminarAulaRef?: AulaListado;
+
+  readonly nuevoNivel = signal(0);
+  readonly nuevoGrado = signal(0);
+  readonly nuevaSeccion = signal('');
+  readonly nuevaCapacidad = signal(30);
+
+  readonly editarNivel = signal(0);
+  readonly editarGrado = signal(0);
+  readonly editarSeccion = signal('');
+  readonly editarCapacidad = signal(35);
+
+  readonly gradosFiltrados = computed(() =>
+    this.grados().filter(g => g.codNivel === this.nuevoNivel())
+  );
+
+  readonly gradosFiltradosEditar = computed(() =>
+    this.grados().filter(g => g.codNivel === this.editarNivel())
+  );
 
   constructor() {
     this.shellState.title.set('Aulas');
     this.shellState.icon.set('bi-door-open');
   }
 
-  selectedCod = 4;
-  editarVisible = false;
-  confirmarEliminarVisible = false;
-  nuevaAulaVisible = false;
-  editarError = '';
-  nuevaAulaError = '';
-  confirmarAccion = 'eliminar';
-  confirmarMessage = '';
-
-  private editarAulaRef?: Aula;
-  private eliminarAulaRef?: Aula;
-
-  editarData = { nivel: '', grado: '', seccion: '', max: 35 };
-  nuevaAulaData = { nivel: 'Inicial', grado: '', seccion: '', max: 30 };
-
-  get aulas(): Aula[] {
-    return this.aulasService.aulas();
+  async ngOnInit(): Promise<void> {
+    try {
+      await this.aulaApi.cargarAnioActivo();
+    } catch {
+      // ignorar si no hay año activo
+    }
+    await this.aulaApi.cargarNiveles();
+    await this.aulaApi.cargarGrados();
+    await this.aulaApi.cargarAulas(this.anioActivo()?.id);
   }
 
-  get aulaSeleccionada(): Aula | undefined {
-    return this.aulas.find(a => a.cod === this.selectedCod);
-  }
-
-  get alumnosAula(): AlumnoAula[] {
-    return this.aulasService.alumnosAula4();
+  get aulaSeleccionada(): AulaListado | undefined {
+    return this.aulas().find(a => a.id === this.selectedId());
   }
 
   get puedeEditar(): boolean {
@@ -58,10 +80,30 @@ export class AulasComponent {
     return this.permisos.puede('aulas', 'eliminar');
   }
 
-  editarAula(event: Event, a: Aula): void {
+  async seleccionarAula(id: number): Promise<void> {
+    this.selectedId.set(id);
+    await this.aulaApi.cargarAlumnosAula(id);
+  }
+
+  onNivelChange(codNivel: number): void {
+    this.nuevoNivel.set(codNivel);
+    this.nuevoGrado.set(0);
+  }
+
+  onNivelChangeEditar(codNivel: number): void {
+    this.editarNivel.set(codNivel);
+    this.editarGrado.set(0);
+  }
+
+  editarAula(event: Event, a: AulaListado): void {
     event.stopPropagation();
     this.editarAulaRef = a;
-    this.editarData = { nivel: a.nivel, grado: a.grado, seccion: a.seccion, max: a.max };
+    const nivelId = this.niveles().find(n => n.nombre === a.nivel)?.id ?? 0;
+    const gradoId = this.grados().find(g => g.nombreGrado === a.grado && g.codNivel === nivelId)?.id ?? 0;
+    this.editarNivel.set(nivelId);
+    this.editarGrado.set(gradoId);
+    this.editarSeccion.set(a.seccion);
+    this.editarCapacidad.set(a.capacidadMaxima);
     this.editarError = '';
     this.editarVisible = true;
   }
@@ -71,78 +113,96 @@ export class AulasComponent {
     this.editarAulaRef = undefined;
   }
 
-  guardarEdicion(): void {
+  async guardarEdicion(): Promise<void> {
     const ref = this.editarAulaRef;
     if (!ref) return;
-    if (!this.editarData.nivel || !this.editarData.grado.trim() || !this.editarData.seccion.trim()) {
+    if (!this.editarNivel() || !this.editarGrado() || !this.editarSeccion().trim()) {
       this.editarError = 'Todos los campos son obligatorios.';
       return;
     }
-    this.aulasService.aulas.update(aulas => {
-      const idx = aulas.findIndex(a => a.cod === ref.cod);
-      if (idx !== -1) {
-        aulas = [...aulas];
-        aulas[idx] = {
-          ...aulas[idx],
-          nivel: this.editarData.nivel,
-          grado: this.editarData.grado.trim(),
-          seccion: this.editarData.seccion.trim().toUpperCase(),
-          max: Number(this.editarData.max),
-        };
-      }
-      return aulas;
-    });
-    this.cerrarEditar();
+    this.loading.set(true);
+    try {
+      await this.aulaApi.editarAula(ref.id, {
+        codAnioAcademico: this.anioActivo()?.id ?? 0,
+        codNivel: this.editarNivel(),
+        codGrado: this.editarGrado(),
+        seccion: this.editarSeccion().trim().toUpperCase(),
+        capacidadMaxima: Number(this.editarCapacidad()),
+      });
+      await this.aulaApi.cargarAulas(this.anioActivo()?.id);
+      this.cerrarEditar();
+    } catch (e: any) {
+      this.editarError = e.error?.message || 'Error al guardar';
+    } finally {
+      this.loading.set(false);
+    }
   }
 
-  eliminarAula(event: Event, a: Aula): void {
+  eliminarAula(event: Event, a: AulaListado): void {
     event.stopPropagation();
     this.eliminarAulaRef = a;
-    const nuevoEstado = a.estado === 'activo' ? 'eliminado' : 'activo';
-    this.confirmarAccion = nuevoEstado === 'eliminado' ? 'eliminar' : 'restaurar';
-    this.confirmarMessage = `¿Estás seguro de ${this.confirmarAccion} el aula "${a.nivel} ${a.grado} ${a.seccion}"?`;
+    const textoEstado = a.estado ? 'eliminar' : 'restaurar';
+    this.confirmarMessage = `¿Estás seguro de ${textoEstado} el aula "${a.nivel} ${a.grado} ${a.seccion}"?`;
     this.confirmarEliminarVisible = true;
   }
 
-  confirmarEliminar(): void {
+  async confirmarEliminar(): Promise<void> {
     const ref = this.eliminarAulaRef;
     if (!ref) return;
-    const nuevoEstado = ref.estado === 'activo' ? 'eliminado' : 'activo';
-    this.aulasService.aulas.update(aulas => {
-      const idx = aulas.findIndex(a => a.cod === ref.cod);
-      if (idx !== -1) {
-        aulas = [...aulas];
-        aulas[idx] = { ...aulas[idx], estado: nuevoEstado };
-      }
-      return aulas;
-    });
-    this.confirmarEliminarVisible = false;
-    this.eliminarAulaRef = undefined;
+    this.loading.set(true);
+    try {
+      await this.aulaApi.eliminarAula(ref.id);
+      await this.aulaApi.cargarAulas(this.anioActivo()?.id);
+    } catch {
+      // ignorar
+    } finally {
+      this.loading.set(false);
+      this.confirmarEliminarVisible = false;
+    }
   }
 
   abrirNuevaAula(): void {
-    this.nuevaAulaData = { nivel: 'Inicial', grado: '', seccion: '', max: 30 };
+    const primerNivel = this.niveles()[0];
+    this.nuevoNivel.set(primerNivel?.id ?? 0);
+    this.nuevoGrado.set(0);
+    this.nuevaSeccion.set('');
+    this.nuevaCapacidad.set(30);
     this.nuevaAulaError = '';
     this.nuevaAulaVisible = true;
   }
 
-  guardarNuevaAula(): void {
-    if (!this.nuevaAulaData.nivel || !this.nuevaAulaData.grado.trim() || !this.nuevaAulaData.seccion.trim()) {
+  async guardarNuevaAula(): Promise<void> {
+    if (!this.nuevoNivel() || !this.nuevoGrado() || !this.nuevaSeccion().trim()) {
       this.nuevaAulaError = 'Todos los campos son obligatorios.';
       return;
     }
-    const aulas = this.aulasService.aulas();
-    const maxCod = aulas.reduce((m, a) => Math.max(m, a.cod), 0);
-    const nueva: Aula = {
-      cod: maxCod + 1,
-      nivel: this.nuevaAulaData.nivel,
-      grado: this.nuevaAulaData.grado.trim(),
-      seccion: this.nuevaAulaData.seccion.trim().toUpperCase(),
-      cupo: 0,
-      max: Number(this.nuevaAulaData.max),
-      estado: 'activo',
-    };
-    this.aulasService.aulas.update(as => [...as, nueva]);
-    this.nuevaAulaVisible = false;
+    this.loading.set(true);
+    try {
+      await this.aulaApi.crearAula({
+        codAnioAcademico: this.anioActivo()?.id ?? 0,
+        codNivel: this.nuevoNivel(),
+        codGrado: this.nuevoGrado(),
+        seccion: this.nuevaSeccion().trim().toUpperCase(),
+        capacidadMaxima: Number(this.nuevaCapacidad()),
+      });
+      await this.aulaApi.cargarAulas(this.anioActivo()?.id);
+      this.nuevaAulaVisible = false;
+    } catch (e: any) {
+      this.nuevaAulaError = e.error?.message || 'Error al crear aula';
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  onNivelChangeNative(event: Event): void {
+    const target = event.target as HTMLSelectElement;
+    this.nuevoNivel.set(Number(target.value));
+    this.nuevoGrado.set(0);
+  }
+
+  onNivelChangeNativeEditar(event: Event): void {
+    const target = event.target as HTMLSelectElement;
+    this.editarNivel.set(Number(target.value));
+    this.editarGrado.set(0);
   }
 }
