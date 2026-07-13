@@ -31,17 +31,19 @@ export class UsuariosComponent implements OnInit, OnDestroy {
   loading = signal(true);
   loadError = signal('');
 
+  permisosRol = signal<Record<string, boolean>>({});
   selectedUserId = signal(3);
 
-  nuevoModalVisible = signal(false);
-  editarModalVisible = signal(false);
+  usuarioModalVisible = signal(false);
+  modoUsuario = signal<'crear' | 'editar'>('crear');
   eliminarModalVisible = signal(false);
   editandoUsuario = signal<User | null>(null);
   eliminarUsuario = signal<User | null>(null);
 
-  nuevoError = signal('');
-  editError = signal('');
+  usuarioError = signal('');
   applyMsg = signal('');
+  usuarioModalTitulo = computed(() => this.modoUsuario() === 'crear' ? 'Nuevo usuario' : 'Editar usuario');
+  rolesSeleccionables = computed(() => this.roles().filter(r => r.nombre.toUpperCase() !== 'SUPERUSUARIO'));
   roles = signal<RoleResponse[]>([]);
 
   paginaActual = signal(0);
@@ -52,7 +54,7 @@ export class UsuariosComponent implements OnInit, OnDestroy {
   hayPaginaAnterior = computed(() => this.paginaActual() > 0);
   hayPaginaSiguiente = computed(() => this.paginaActual() < this.totalPaginas() - 1);
 
-  tempModulePerms = signal<Record<string, boolean>>({});
+  //tempModulePerms = signal<Record<string, boolean>>({});
 
   modulosDisponibles = computed(() => {
     const tree = this.auth.funcionalidades();
@@ -72,10 +74,6 @@ export class UsuariosComponent implements OnInit, OnDestroy {
   constructor() {
     this.shellState.title.set('Panel superusuario');
     this.shellState.icon.set('bi bi-shield-check');
-    effect(() => {
-      this.selectedUserId();
-      this.syncTempPerms();
-    });
   }
 
   ngOnInit(): void {
@@ -94,6 +92,8 @@ export class UsuariosComponent implements OnInit, OnDestroy {
         const mapped = res.content.map(u => ({
           id: u.idUsuario,
           nombre: `${u.nombre} ${u.primerApellido}`.trim(),
+          nombreSolo: u.nombre,
+          apellido: u.primerApellido,
           doc: u.numeroDocumento || '—',
           rol: u.nombreRol.toLowerCase(),
           estado: u.estado ? 'activo' : 'inactivo',
@@ -129,23 +129,28 @@ export class UsuariosComponent implements OnInit, OnDestroy {
   }
 
   selectedUser = computed(() => this.usuarios().find(u => u.id === this.selectedUserId()) ?? null);
-  permisosRol = computed(() => {
-    const u = this.selectedUser();
-    if (!u) return {};
+  permisosUsuario = computed(() => {
     const tree = this.auth.funcionalidades();
     if (!tree) return {};
+
     const result: Record<string, boolean> = {};
+
     const buscar = (nodos: FuncionalidadNode[]) => {
-      for (const n of nodos) {
-        for (const h of n.hijos ?? []) {
-          result[h.codigo.toLowerCase()] = h.permisos.ver;
-          for (const sub of h.hijos ?? []) {
+      for (const nodo of nodos) {
+        for (const hijo of nodo.hijos ?? []) {
+
+          result[hijo.codigo.toLowerCase()] = hijo.permisos.ver;
+
+          for (const sub of hijo.hijos ?? []) {
             result[sub.codigo.toLowerCase()] = sub.permisos.ver;
           }
+
         }
       }
     };
+
     buscar(tree);
+
     return result;
   });
   isAdminSelected = computed(() => this.usuarios().some(u => u.noEliminable && u.id === this.selectedUserId()));
@@ -165,26 +170,35 @@ export class UsuariosComponent implements OnInit, OnDestroy {
     return u?.estado === 'activo' ? 'danger' : 'dark';
   });
 
-  private syncTempPerms(): void {
-    const perms = this.permisosRol();
-    const p: Record<string, boolean> = {};
-    const tree = this.auth.funcionalidades();
-    if (tree) {
-      for (const grupo of tree) {
-        for (const hijo of grupo.hijos ?? []) {
-          if (hijo.ruta) p[hijo.codigo.toLowerCase()] = !!perms[hijo.codigo.toLowerCase()];
-          for (const sub of hijo.hijos ?? []) {
-            if (sub.ruta) p[sub.codigo.toLowerCase()] = !!perms[sub.codigo.toLowerCase()];
-          }
-        }
-      }
-    }
-    this.tempModulePerms.set(p);
+  selectUser(id: number): void {
+  this.selectedUserId.set(id);
+
+  const usuario = this.usuarios().find(u => u.id === id);
+  if (!usuario) return;
+
+  const rol = this.roles().find(
+    r => r.nombre.toUpperCase() === usuario.rol.toUpperCase()
+  );
+
+  if (!rol) {
+    this.permisosRol.set({});
+    return;
   }
 
-  selectUser(id: number): void {
-    this.selectedUserId.set(id);
-  }
+  this.permisosService.obtenerPermisos(rol.idRol).subscribe({
+    next: permisos => {
+
+      const map: Record<string, boolean> = {};
+
+      for (const p of permisos) {
+        map[p.codigo.toLowerCase()] = p.ver;
+      }
+
+      this.permisosRol.set(map);
+    },
+    error: () => this.permisosRol.set({})
+  });
+}
 
   toggleVisibility(id: number): void {
     const u = this.usuarios().find(x => x.id === id);
@@ -195,77 +209,70 @@ export class UsuariosComponent implements OnInit, OnDestroy {
   }
 
   openNuevoModal(): void {
-    this.nuevoError.set('');
-    this.nuevoModalVisible.set(true);
-  }
-
-  submitNuevo(nombre: string, primerApellido: string, numeroDocumento: string, rolKey: string): void {
-    if (!nombre.trim()) {
-      this.nuevoError.set('El nombre es obligatorio.');
-      return;
-    }
-    if (!primerApellido.trim()) {
-      this.nuevoError.set('El apellido es obligatorio.');
-      return;
-    }
-    if (!numeroDocumento.trim()) {
-      this.nuevoError.set('El número de documento es obligatorio.');
-      return;
-    }
-    const rolEncontrado = this.roles().find(r => r.nombre.toUpperCase() === rolKey.toUpperCase());
-    if (!rolEncontrado) {
-      this.nuevoError.set('Rol inválido.');
-      return;
-    }
-    const idRol = rolEncontrado.idRol;
-    this.usuariosService.crear({ nombre: nombre.trim(), primerApellido: primerApellido.trim(), numeroDocumento: numeroDocumento.trim(), idRol }).subscribe({
-      next: (res) => {
-        this.cargarPagina(this.paginaActual());
-        this.selectedUserId.set(res.id ?? 0);
-        this.nuevoModalVisible.set(false);
-        this.nuevoError.set('');
-      },
-      error: (err) => {
-        this.nuevoError.set(err.error?.message || 'Error al crear usuario');
-      },
-    });
+    this.modoUsuario.set('crear');
+    this.editandoUsuario.set(null);
+    this.usuarioError.set('');
+    this.usuarioModalVisible.set(true);
   }
 
   openEditarModal(u: User): void {
+    this.modoUsuario.set('editar');
     this.editandoUsuario.set({ ...u });
-    this.editError.set('');
-    this.editarModalVisible.set(true);
+    this.usuarioError.set('');
+    this.usuarioModalVisible.set(true);
   }
 
-  submitEditar(nombre: string, doc: string, rol: string): void {
-    const u = this.editandoUsuario();
-    if (!u) return;
+  submitUsuario(nombre: string, apellido: string, numeroDocumento: string, rolKey: string): void {
     if (!nombre.trim()) {
-      this.editError.set('El nombre completo es obligatorio.');
+      this.usuarioError.set('El nombre es obligatorio.');
       return;
     }
-    const [nombreParte, ...apellidoPartes] = nombre.trim().split(' ');
-    const primerApellido = apellidoPartes.join(' ');
-    const rolEncontrado = this.roles().find(r => r.nombre.toUpperCase() === rol.toUpperCase());
+    if (!apellido.trim()) {
+      this.usuarioError.set('El apellido es obligatorio.');
+      return;
+    }
+    if (!numeroDocumento.trim()) {
+      this.usuarioError.set('El número de documento es obligatorio.');
+      return;
+    }
+    const rolEncontrado = this.rolesSeleccionables().find(r => r.nombre.toUpperCase() === rolKey.toUpperCase());
     if (!rolEncontrado) {
-      this.editError.set('Rol inválido.');
+      this.usuarioError.set('Rol inválido.');
       return;
     }
-    this.usuariosService.actualizar(u.id, {
-      nombre: nombreParte,
-      primerApellido: primerApellido || '—',
-      numeroDocumento: doc.trim() || '—',
+    const payload = {
+      nombre: nombre.trim(),
+      primerApellido: apellido.trim(),
+      numeroDocumento: numeroDocumento.trim(),
       idRol: rolEncontrado.idRol,
-    }).subscribe({
-      next: () => {
-        this.cargarPagina(this.paginaActual());
-        this.editarModalVisible.set(false);
-        this.editError.set('');
-      },
-      error: () => {
-        this.editError.set('Error al actualizar usuario');
-      },
-    });
+    };
+
+    if (this.modoUsuario() === 'crear') {
+      this.usuariosService.crear(payload).subscribe({
+        next: (res) => {
+          this.cargarPagina(this.paginaActual());
+          this.selectedUserId.set(res.id ?? 0);
+          this.usuarioModalVisible.set(false);
+          this.usuarioError.set('');
+        },
+        error: (err) => {
+          this.usuarioError.set(err.error?.message || 'Error al crear usuario');
+        },
+      });
+    } else {
+      const u = this.editandoUsuario();
+      if (!u) return;
+      this.usuariosService.actualizar(u.id, payload).subscribe({
+        next: () => {
+          this.cargarPagina(this.paginaActual());
+          this.usuarioModalVisible.set(false);
+          this.usuarioError.set('');
+        },
+        error: (err) => {
+          this.usuarioError.set(err.error?.message || 'Error al actualizar usuario');
+        },
+      });
+    }
   }
 
   confirmEliminar(u: User): void {
@@ -285,48 +292,6 @@ export class UsuariosComponent implements OnInit, OnDestroy {
       error: () => {
         this.eliminarModalVisible.set(false);
         this.eliminarUsuario.set(null);
-      },
-    });
-  }
-
-  toggleModulePerm(key: string, event: Event): void {
-    const checked = (event.target as HTMLInputElement).checked;
-    this.tempModulePerms.update(p => ({ ...p, [key]: checked }));
-  }
-
-  applyPermisos(): void {
-    const u = this.selectedUser();
-    if (!u) return;
-    this.loading.set(true);
-    const rolId = this.roles().find(r => r.nombre.toUpperCase() === u.rol.toUpperCase())?.idRol;
-    if (!rolId) {
-      this.applyMsg.set('Error: rol no encontrado');
-      setTimeout(() => this.applyMsg.set(''), 2000);
-      this.loading.set(false);
-      return;
-    }
-    const payload: { idFuncionalidad: number; codigo: string; ver: boolean; crear: boolean; editar: boolean; eliminar: boolean; imprimir: boolean }[] = [];
-    for (const [codigo, checked] of Object.entries(this.tempModulePerms())) {
-      payload.push({
-        idFuncionalidad: 0,
-        codigo: codigo.toUpperCase(),
-        ver: checked,
-        crear: checked,
-        editar: checked,
-        eliminar: checked,
-        imprimir: checked,
-      });
-    }
-    this.permisosService.guardarPermisos(rolId, { permisos: payload }).subscribe({
-      next: () => {
-        this.applyMsg.set('Permisos aplicados');
-        setTimeout(() => this.applyMsg.set(''), 1200);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.applyMsg.set('Error al guardar permisos');
-        setTimeout(() => this.applyMsg.set(''), 2000);
-        this.loading.set(false);
       },
     });
   }

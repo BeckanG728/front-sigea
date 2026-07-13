@@ -8,27 +8,13 @@ import {
   Verify2FARequest, Verify2FAResponse,
   ChangePasswordRequest, Enable2FARequest, Enable2FAResponse
 } from '../models/auth.model';
-import { ROLE_KEY_MAP } from '../models/role.model';
+import { ROLE_KEY_MAP, RoleInfo, ROLES } from '../models/role.model';
 import { DataService } from './data.service';
 import { FuncionalidadNode, Permisos } from '../models/funcionalidad.model';
 import { MenuEntry, SidebarGroup, SidebarLink, SidebarSubGroup } from '../models/menu.model';
 import { getDevTreeForRole } from '../data/dev-funcionalidades';
 import { CATALOGO_MENU } from '../data/catalogo-menu';
 
-export interface RoleInfo {
-  key: string;
-  routePrefix: string;
-  label: string;
-  initials: string;
-  css: string;
-  badgeLabel: string;
-}
-
-export const ROLES_LOCAL: { [key: string]: RoleInfo } = {
-  superusuario: { key: 'superusuario', routePrefix: 'su', label: 'Superusuario', initials: 'SU', css: 'su', badgeLabel: 'acceso total' },
-  director: { key: 'director', routePrefix: 'director', label: 'Director', initials: 'DI', css: 'director', badgeLabel: 'solo lectura' },
-  secretaria: { key: 'secretaria', routePrefix: 'secretaria', label: 'Secretaria', initials: 'SE', css: 'secretaria', badgeLabel: 'operaciones' },
-};
 
 const API_BASE = environment.apiUrl;
 
@@ -71,7 +57,7 @@ export class AuthService {
         if (res.login2fa) return of(res);
 
         const roleKey = ROLE_KEY_MAP[res.nombreRol] ?? '';
-        const roleInfo = ROLES_LOCAL[roleKey];
+        const roleInfo = ROLES[roleKey];
         if (!roleInfo) return of(res);
 
         localStorage.setItem('role', roleKey);
@@ -99,7 +85,7 @@ export class AuthService {
         localStorage.setItem('token', res.token);
       }),
       switchMap(res => {
-        const roleInfo = ROLES_LOCAL[this.pendingRolKey];
+        const roleInfo = ROLES[this.pendingRolKey];
         if (!roleInfo) return of(res);
 
         localStorage.setItem('role', this.pendingRolKey);
@@ -165,18 +151,7 @@ export class AuthService {
   get homeRoute(): string {
     const r = this.role();
     if (!r) return '/login';
-    // Apunta al contenedor "en blanco" del rol (ver PanelInicioComponent), no a una
-    // vista funcional puntual. Si se apuntara directo a una vista (p. ej. /secretaria/alumnos)
-    // y esa vista no tuviera el permiso asignado, el funcionalidadGuard la rechazaría justo
-    // tras el login y el usuario quedaría sin ver nada. La ruta home nunca tiene
-    // funcionalidadGuard, así que el login siempre "resuelve" a algo visible, y el usuario
-    // navega desde el menú lateral (que ya filtra por permisos reales).
-    const map: { [key: string]: string } = {
-      superusuario: '/su',
-      director: '/director',
-      secretaria: '/secretaria',
-    };
-    return map[r.key] || '/login';
+    return '/';
   }
 
   // ─── Funcionalidades tree ────────────────────────────────────────
@@ -197,6 +172,38 @@ export class AuthService {
     return this.buscarRuta(tree, ruta);
   }
 
+  tieneCodigoFuncionalidad(codigo: string): boolean {
+    const tree = this.funcionalidades();
+
+    if (!tree) return false;
+
+    return this.buscarCodigo(tree, codigo);
+  }
+
+  private buscarCodigo(
+    nodes: FuncionalidadNode[],
+    codigo: string
+  ): boolean {
+
+    for (const node of nodes) {
+
+      if (
+        node.codigo === codigo &&
+        node.permisos.ver
+      ) {
+        return true;
+      }
+
+      if (node.hijos?.length) {
+        if (this.buscarCodigo(node.hijos, codigo)) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
   tienePermiso(nombre: string, permiso: keyof Permisos): boolean {
     const tree = this.funcionalidades();
     if (!tree) return true;
@@ -206,18 +213,17 @@ export class AuthService {
   // ─── Private ─────────────────────────────────────────────────────
 
   private fetchPermisos(): Observable<FuncionalidadNode[]> {
-    const routePrefix = this.role()?.routePrefix ?? '';
     return this.http.get<{ permisos: any[] }>(`${API_BASE}/api/funcionalidades`).pipe(
       tap(response => {
-        const enriched = this.enrichTree(response.permisos, routePrefix);
+        const enriched = this.enrichTree(response.permisos);
         console.log(enriched)
         this.persistSession(enriched);
       }),
-      map(response => this.enrichTree(response.permisos, routePrefix))
+      map(response => this.enrichTree(response.permisos))
     );
   }
 
-  private enrichTree(nodes: any[], routePrefix: string): FuncionalidadNode[] {
+  private enrichTree(nodes: any[]): FuncionalidadNode[] {
     return nodes.map(n => {
       const entry = CATALOGO_MENU[n.codigo];
       let ruta: string | undefined;
@@ -226,12 +232,12 @@ export class AuthService {
         if (entry.ruta) {
           ruta = entry.ruta.startsWith('/')
             ? entry.ruta
-            : `/${entry.ruta.replace(':prefix', routePrefix)}`;
+            : `/${entry.ruta}`;
         }
         icon = entry.icono;
       }
       const hijos = n.hijos && n.hijos.length > 0
-        ? this.enrichTree(n.hijos, routePrefix)
+        ? this.enrichTree(n.hijos)
         : [];
 
       const node: FuncionalidadNode = {
@@ -258,8 +264,8 @@ export class AuthService {
     if (!token) return;
     const roleKey = localStorage.getItem('role');
     const username = localStorage.getItem('username');
-    if (roleKey && username && ROLES_LOCAL[roleKey]) {
-      this.role.set(ROLES_LOCAL[roleKey]);
+    if (roleKey && username && ROLES[roleKey]) {
+      this.role.set(ROLES[roleKey]);
       this.usuario.set(username);
       this.isLoggedIn.set(true);
       const idUsr = localStorage.getItem('idUsuario');
