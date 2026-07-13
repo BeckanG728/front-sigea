@@ -3,11 +3,14 @@ import { Subscription } from 'rxjs';
 import { ModalComponent } from '../../../shared/modal/modal.component';
 import { ConfirmDialogComponent as ConfirmModalComponent } from '../../../shared/confirm-dialog/confirm-dialog.component';
 import { UsuariosService } from './usuarios.service';
+import { PermisosService } from '../permisos/permisos.service';
 import { DataService } from '../../../core/services/data.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { ShellStateService } from '../../../core/services/shell-state.service';
 import { User } from '../../../core/models/user.model';
 import { PermisoMap } from '../../../core/models/permiso.model';
+import type { FuncionalidadNode } from '../../../core/models/funcionalidad.model';
+import { RoleResponse } from '../../../core/models/role-api.model';
 
 @Component({
   selector: 'app-usuarios',
@@ -17,6 +20,7 @@ import { PermisoMap } from '../../../core/models/permiso.model';
 })
 export class UsuariosComponent implements OnInit, OnDestroy {
   private usuariosService = inject(UsuariosService);
+  private permisosService = inject(PermisosService);
   private shellState = inject(ShellStateService);
   private sub?: Subscription;
 
@@ -38,13 +42,24 @@ export class UsuariosComponent implements OnInit, OnDestroy {
   nuevoError = signal('');
   editError = signal('');
   applyMsg = signal('');
-
-  private readonly ROL_ID: Record<string, number> = {
-    director: 2,
-    secretaria: 3,
-  };
+  roles = signal<RoleResponse[]>([]);
 
   tempModulePerms = signal<Record<string, boolean>>({});
+
+  modulosDisponibles = computed(() => {
+    const tree = this.auth.funcionalidades();
+    if (!tree) return [];
+    const result: { key: string; label: string }[] = [];
+    for (const grupo of tree) {
+      for (const hijo of grupo.hijos ?? []) {
+        if (hijo.ruta) result.push({ key: hijo.codigo.toLowerCase(), label: hijo.nombre });
+        for (const sub of hijo.hijos ?? []) {
+          if (sub.ruta) result.push({ key: sub.codigo.toLowerCase(), label: sub.nombre });
+        }
+      }
+    }
+    return result;
+  });
 
   constructor() {
     this.shellState.title.set('Panel superusuario');
@@ -56,9 +71,13 @@ export class UsuariosComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.permisosService.listarRoles().subscribe({
+      next: roles => this.roles.set(roles),
+      error: () => this.roles.set([]),
+    });
     this.sub = this.usuariosService.listar().subscribe({
       next: (usuarios) => {
-        this.usuarios.set(usuarios.map(u => ({
+        const mapped = usuarios.map(u => ({
           id: u.idUsuario,
           nombre: `${u.nombre} ${u.apellido1}`.trim() || u.usuario,
           username: u.usuario,
@@ -70,7 +89,9 @@ export class UsuariosComponent implements OnInit, OnDestroy {
           permisosVisibles: true,
           dosFactorActivo: u.dosFactorHabilitado,
           secreto2FA: null,
-        })));
+        }));
+        this.usuarios.set(mapped);
+        this.data.usuarios.set(mapped);
         this.loading.set(false);
       },
       error: (err) => {
@@ -88,7 +109,22 @@ export class UsuariosComponent implements OnInit, OnDestroy {
   selectedUser = computed(() => this.usuarios().find(u => u.id === this.selectedUserId()) ?? null);
   permisosRol = computed(() => {
     const u = this.selectedUser();
-    return u ? (this.data.permisosPorRol()[u.rol] || {}) : {};
+    if (!u) return {};
+    const tree = this.auth.funcionalidades();
+    if (!tree) return {};
+    const result: Record<string, boolean> = {};
+    const buscar = (nodos: FuncionalidadNode[]) => {
+      for (const n of nodos) {
+        for (const h of n.hijos ?? []) {
+          result[h.codigo.toLowerCase()] = h.permisos.ver;
+          for (const sub of h.hijos ?? []) {
+            result[sub.codigo.toLowerCase()] = sub.permisos.ver;
+          }
+        }
+      }
+    };
+    buscar(tree);
+    return result;
   });
   isAdminSelected = computed(() => this.usuarios().some(u => u.noEliminable && u.id === this.selectedUserId()));
 
@@ -110,8 +146,16 @@ export class UsuariosComponent implements OnInit, OnDestroy {
   private syncTempPerms(): void {
     const perms = this.permisosRol();
     const p: Record<string, boolean> = {};
-    for (const m of this.data.modulos) {
-      p[m.key] = !!perms[m.key];
+    const tree = this.auth.funcionalidades();
+    if (tree) {
+      for (const grupo of tree) {
+        for (const hijo of grupo.hijos ?? []) {
+          if (hijo.ruta) p[hijo.codigo.toLowerCase()] = !!perms[hijo.codigo.toLowerCase()];
+          for (const sub of hijo.hijos ?? []) {
+            if (sub.ruta) p[sub.codigo.toLowerCase()] = !!perms[sub.codigo.toLowerCase()];
+          }
+        }
+      }
     }
     this.tempModulePerms.set(p);
   }
@@ -146,30 +190,29 @@ export class UsuariosComponent implements OnInit, OnDestroy {
       this.nuevoError.set('El DNI debe tener exactamente 8 dígitos.');
       return;
     }
-    const password = this.data.parametros().claveDefecto;
-    const idRol = this.ROL_ID[rolKey];
-    if (!idRol) {
+    const rolEncontrado = this.roles().find(r => r.nombre.toUpperCase() === rolKey.toUpperCase());
+    if (!rolEncontrado) {
       this.nuevoError.set('Rol inválido.');
       return;
     }
-    this.usuariosService.crear({ nombre: nombre.trim(), apellido1: apellido1.trim(), dni: dni.trim(), password, idRol }).subscribe({
+    const idRol = rolEncontrado.idRol;
+    this.usuariosService.crear({ nombre: nombre.trim(), apellido1: apellido1.trim(), dni: dni.trim(), password: 'Sigea@2026', idRol }).subscribe({
       next: (u) => {
-        this.usuarios.update(list => [
-          ...list,
-          {
-            id: u.idUsuario,
-            nombre: `${u.nombre} ${u.apellido1}`.trim() || u.usuario,
-            username: u.usuario,
-            doc: u.dni,
-            rol: u.nombreRol.toLowerCase(),
-            estado: u.estado ? 'activo' : 'eliminado',
-            noEliminable: u.nombreRol === 'SUPERUSUARIO',
-            bloqueado: false,
-            permisosVisibles: true,
-            dosFactorActivo: u.dosFactorHabilitado,
-            secreto2FA: null,
-          },
-        ]);
+        const nuevo = {
+          id: u.idUsuario,
+          nombre: `${u.nombre} ${u.apellido1}`.trim() || u.usuario,
+          username: u.usuario,
+          doc: u.dni,
+          rol: u.nombreRol.toLowerCase(),
+          estado: u.estado ? 'activo' : 'eliminado',
+          noEliminable: u.nombreRol === 'SUPERUSUARIO',
+          bloqueado: false,
+          permisosVisibles: true,
+          dosFactorActivo: u.dosFactorHabilitado,
+          secreto2FA: null,
+        };
+        this.usuarios.update(list => [...list, nuevo]);
+        this.data.usuarios.set(this.usuarios());
         this.selectedUserId.set(u.idUsuario);
         this.nuevoModalVisible.set(false);
         this.nuevoError.set('');
@@ -198,9 +241,10 @@ export class UsuariosComponent implements OnInit, OnDestroy {
     if (target) {
       target.nombre = nombre.trim();
       target.doc = doc.trim() || '—';
-      target.rol = rol;
+      target.rol = rol.toLowerCase();
     }
     this.usuarios.set([...usuarios]);
+    this.data.usuarios.set([...usuarios]);
     this.editarModalVisible.set(false);
   }
 
@@ -214,6 +258,7 @@ export class UsuariosComponent implements OnInit, OnDestroy {
     if (!u) return;
     u.estado = u.estado === 'activo' ? 'eliminado' : 'activo';
     this.usuarios.set([...this.usuarios()]);
+    this.data.usuarios.set(this.usuarios());
     this.eliminarModalVisible.set(false);
     this.eliminarUsuario.set(null);
   }
@@ -226,17 +271,37 @@ export class UsuariosComponent implements OnInit, OnDestroy {
   applyPermisos(): void {
     const u = this.selectedUser();
     if (!u) return;
-    const actual = this.permisosRol();
-    const nuevo: Record<string, PermisoMap> = {};
-    for (const [modKey, checked] of Object.entries(this.tempModulePerms())) {
-      if (checked) {
-        nuevo[modKey] = actual[modKey] || { ver: true, crear: true, editar: true, eliminar: true, imprimir: true };
-      }
+    this.loading.set(true);
+    const rolId = this.roles().find(r => r.nombre.toUpperCase() === u.rol.toUpperCase())?.idRol;
+    if (!rolId) {
+      this.applyMsg.set('Error: rol no encontrado');
+      setTimeout(() => this.applyMsg.set(''), 2000);
+      this.loading.set(false);
+      return;
     }
-    const perms = this.data.permisosPorRol();
-    perms[u.rol] = nuevo;
-    this.data.permisosPorRol.set({ ...perms });
-    this.applyMsg.set('Permisos aplicados');
-    setTimeout(() => this.applyMsg.set(''), 1200);
+    const payload: { idFuncionalidad: number; codigo: string; ver: boolean; crear: boolean; editar: boolean; eliminar: boolean; imprimir: boolean }[] = [];
+    for (const [codigo, checked] of Object.entries(this.tempModulePerms())) {
+      payload.push({
+        idFuncionalidad: 0,
+        codigo: codigo.toUpperCase(),
+        ver: checked,
+        crear: checked,
+        editar: checked,
+        eliminar: checked,
+        imprimir: checked,
+      });
+    }
+    this.permisosService.guardarPermisos(rolId, { permisos: payload }).subscribe({
+      next: () => {
+        this.applyMsg.set('Permisos aplicados');
+        setTimeout(() => this.applyMsg.set(''), 1200);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.applyMsg.set('Error al guardar permisos');
+        setTimeout(() => this.applyMsg.set(''), 2000);
+        this.loading.set(false);
+      },
+    });
   }
 }

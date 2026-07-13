@@ -105,62 +105,7 @@ export type PermisoMap = { [subKey: string]: boolean };
 
 @Injectable({ providedIn: 'root' })
 export class DataService {
-  readonly usuarios = signal<Usuario[]>([
-    { id: 1, nombre: 'Admin', username: 'admin', doc: '—', rol: 'superusuario', estado: 'activo', noEliminable: true, bloqueado: false, permisosVisibles: true, dosFactorActivo: false, secreto2FA: null },
-    { id: 2, nombre: 'Juan Ríos', username: 'director01', doc: 'DNI 47112233', rol: 'director', estado: 'activo', bloqueado: true, permisosVisibles: true, dosFactorActivo: false, secreto2FA: null },
-    { id: 3, nombre: 'María Torres', username: 'secretaria01', doc: 'DNI 52009871', rol: 'secretaria', estado: 'activo', bloqueado: false, permisosVisibles: true, dosFactorActivo: false, secreto2FA: null },
-    { id: 4, nombre: 'Luis Paz', username: 'secretaria02', doc: 'DNI 31007654', rol: 'secretaria', estado: 'eliminado', bloqueado: false, permisosVisibles: true, dosFactorActivo: false, secreto2FA: null },
-  ]);
-
-  readonly parametros = signal<Parametros>({
-    anioAcademico: 2026,
-    moneda: 'PEN',
-    intentosFallidosMax: 3,
-    minutosBloqueoTemporal: 15,
-    minutosExpiracionSesion: 30,
-    claveDefecto: 'Sigea@2026',
-  });
-
-  readonly parametrosLista = signal<ParametroItem[]>([
-    { id: 1, nombre_parametro: 'Año académico activo',     valor_parametro: '2026' },
-    { id: 2, nombre_parametro: 'Moneda',                    valor_parametro: 'PEN' },
-    { id: 3, nombre_parametro: 'Intentos fallidos máx.',    valor_parametro: '3' },
-    { id: 4, nombre_parametro: 'Minutos bloqueo temporal',  valor_parametro: '15' },
-    { id: 5, nombre_parametro: 'Minutos expiración sesión', valor_parametro: '30' },
-    { id: 6, nombre_parametro: 'Clave por defecto',         valor_parametro: 'Sigea@2026' },
-  ]);
-
-  readonly modulos: Modulo[] = [
-    { key: 'usuarios', label: 'Usuarios', desc: 'Control total de usuarios, roles y asignación de permisos del sistema' },
-    { key: 'matriculas', label: 'Matrículas', desc: 'Registrar y administrar matrículas de alumnos por año académico' },
-    { key: 'pagos', label: 'Pagos', desc: 'Registrar pagos de cuotas y generar recibos' },
-    { key: 'alumnos', label: 'Alumnos', desc: 'Administrar el registro de alumnos' },
-    { key: 'aulas', label: 'Aulas', desc: 'Administrar aulas, secciones y asignación de cupos' },
-    { key: 'conceptos', label: 'Conceptos', desc: 'Administrar el tarifario (conceptos) por año académico' },
-    { key: 'reportes', label: 'Reportes avanzados', desc: 'Generar y exportar reportes del sistema' },
-  ];
-
-  readonly subPermisos: SubPermiso[] = [
-    { key: 'ver', label: 'Ver', desc: 'Consultar los registros del módulo' },
-    { key: 'crear', label: 'Crear', desc: 'Registrar nuevos elementos' },
-    { key: 'editar', label: 'Editar', desc: 'Modificar registros existentes' },
-    { key: 'eliminar', label: 'Eliminar', desc: 'Eliminar registros (baja lógica)' },
-    { key: 'imprimir', label: 'Imprimir', desc: 'Generar e imprimir reportes o comprobantes' },
-  ];
-
-  private fullPerm = (): PermisoMap => ({ ver: true, crear: true, editar: true, eliminar: true, imprimir: true });
-  private readPerm = (): PermisoMap => ({ ver: true, crear: false, editar: false, eliminar: false, imprimir: true });
-
-  readonly permisosPorRol = signal<{ [rol: string]: { [modKey: string]: PermisoMap } }>({
-    superusuario: Object.fromEntries(this.modulos.map(m => [m.key, this.fullPerm()])),
-    director: Object.fromEntries(
-      this.modulos.filter(m => m.key !== 'usuarios').map(m => [m.key, this.readPerm()])
-    ),
-    secretaria: Object.fromEntries(
-      this.modulos.filter(m => ['matriculas', 'pagos', 'alumnos', 'aulas', 'conceptos'].includes(m.key))
-        .map(m => [m.key, this.fullPerm()])
-    ),
-  });
+  readonly usuarios = signal<Usuario[]>([]);
 
   readonly aulas = signal<Aula[]>([
     { cod: 1, nivel: 'Inicial', grado: '3 años', seccion: 'A', cupo: 20, max: 25, estado: 'activo' },
@@ -203,6 +148,24 @@ export class DataService {
     { n: 1, alumno: 'Chinga Ramos, Carlos', aula: 'Sec. 1° A', fecha: '10/03/2026', estado: 'activa', registradoPor: 'secretaria01' },
     { n: 2, alumno: 'López Díaz, Lucía', aula: 'Prim. 3° B', fecha: '11/03/2026', estado: 'activa', registradoPor: 'secretaria01' },
     { n: 3, alumno: 'Quispe Meza, Pedro', aula: 'Inic. 3A', fecha: '12/03/2026', estado: 'pendiente', registradoPor: 'secretaria01' },
+  ]);
+
+  readonly parametros = signal<Parametros>({
+    anioAcademico: 2026,
+    moneda: 'S/',
+    intentosFallidosMax: 3,
+    minutosBloqueoTemporal: 30,
+    minutosExpiracionSesion: 60,
+    claveDefecto: '123456',
+  });
+
+  readonly parametrosLista = signal<ParametroItem[]>([
+    { id: 1, nombre_parametro: 'Año académico activo',     valor_parametro: '2026' },
+    { id: 2, nombre_parametro: 'Moneda',                    valor_parametro: 'S/' },
+    { id: 3, nombre_parametro: 'Intentos fallidos máx.',    valor_parametro: '3' },
+    { id: 4, nombre_parametro: 'Minutos bloqueo temporal',  valor_parametro: '30' },
+    { id: 5, nombre_parametro: 'Minutos expiración sesión', valor_parametro: '60' },
+    { id: 6, nombre_parametro: 'Clave por defecto',         valor_parametro: '123456' },
   ]);
 
   readonly auditoria = signal<AuditoriaEvento[]>([

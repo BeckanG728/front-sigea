@@ -27,11 +27,8 @@
                   <td>{{ u.nombre }}</td>
                   <td>{{ u.doc }}</td>
                   <td>
-                    <span class="badge"
-                          [class.badge--su]="u.rol === 'superusuario'"
-                          [class.badge--director]="u.rol === 'director'"
-                          [class.badge--secretaria]="u.rol === 'secretaria'">
-                      <span>{{ u.rol === 'superusuario' ? 'superusuario' : u.rol }}</span>
+                    <span class="badge badge--su">
+                      <span>{{ u.rol }}</span>
                     </span>
                   </td>
                   <td>
@@ -76,19 +73,16 @@
       <div class="card__title">
         <i class="bi bi-lock"></i> Permisos — {{ selectedUser()?.nombre }}
         @if (selectedUser()) {
-          <span class="badge"
-                [class.badge--su]="selectedUser()!.rol === 'superusuario'"
-                [class.badge--director]="selectedUser()!.rol === 'director'"
-                [class.badge--secretaria]="selectedUser()!.rol === 'secretaria'">
-            <span>{{ selectedUser()!.rol === 'superusuario' ? 'superusuario' : selectedUser()!.rol }}</span>
+          <span class="badge badge--su">
+            <span>{{ selectedUser()!.rol }}</span>
           </span>
         }
       </div>
       @if (selectedUser()?.permisosVisibles) {
         <div style="font-size:12px; color:var(--color-text-muted); margin-bottom:8px">Módulos habilitados</div>
-        @for (m of data.modulos; track m.key) {
+        @for (m of modulosDisponibles(); track m.key) {
           <label class="flex gap-2" style="align-items:center; padding:4px 0; font-size:13px">
-            <input type="checkbox" [checked]="!!permisosRol()[m.key]"
+            <input type="checkbox" [checked]="!!tempModulePerms()[m.key]"
                    (change)="toggleModulePerm(m.key, $event)" />
             {{ m.label }}
           </label>
@@ -100,7 +94,7 @@
             <i class="bi bi-check-lg"></i> Aplicar permisos
           }
         </button>
-        <p class="note mt-2"><i class="bi bi-info-circle"></i> Detalle de Ver/Crear/Editar/Eliminar/Imprimir por módulo en <a href="/su/permisos">Permisos</a></p>
+        <p class="note mt-2"><i class="bi bi-info-circle"></i> Detalle de Ver/Crear/Editar/Eliminar/Imprimir por módulo en <a href="/su/roles">Roles</a></p>
       } @else {
         <p class="note mt-2"><i class="bi bi-slash-circle"></i> Los permisos de este usuario están ocultos. Usa el ícono del ojo en la tabla para mostrarlos.</p>
       }
@@ -125,8 +119,11 @@
     <div class="field">
       <label>Rol *</label>
       <select #rolSelect name="rol" required>
-        <option value="secretaria">Secretaria</option>
-        <option value="director">Director</option>
+        @for (r of roles(); track r.idRol) {
+          @if (r.nombre.toUpperCase() !== 'SUPERUSUARIO') {
+            <option [value]="r.nombre">{{ r.nombre }}</option>
+          }
+        }
       </select>
     </div>
     @if (nuevoError()) {
@@ -158,9 +155,9 @@
       <div class="field">
         <label>Rol *</label>
         <select #editRol name="rol" required>
-          <option value="secretaria" [selected]="u.rol === 'secretaria'">Secretaria</option>
-          <option value="director" [selected]="u.rol === 'director'">Director</option>
-          <option value="superusuario" [selected]="u.rol === 'superusuario'">Superusuario</option>
+          @for (r of roles(); track r.idRol) {
+            <option [value]="r.nombre" [selected]="r.nombre.toUpperCase() === u.rol.toUpperCase()">{{ r.nombre }}</option>
+          }
         </select>
       </div>
       @if (editError()) {

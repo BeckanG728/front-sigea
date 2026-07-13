@@ -201,7 +201,7 @@ export class AuthService {
 
   private fetchPermisos(): Observable<FuncionalidadNode[]> {
     const routePrefix = this.role()?.routePrefix ?? '';
-    return this.http.get<{ permisos: any[] }>(`${API_BASE}/api/funcionalidades/mis-permisos`).pipe(
+    return this.http.get<{ permisos: any[] }>(`${API_BASE}/api/funcionalidades`).pipe(
       tap(response => {
         const enriched = this.enrichTree(response.permisos, routePrefix);
         this.persistSession(enriched);
@@ -281,7 +281,7 @@ export class AuthService {
       dataGroup: node.nombre.toLowerCase().replace(/\s+/g, '-'),
       icon: node.icon,
       children: (node.hijos ?? [])
-        .filter(h => h.permisos.ver)
+        .filter(h => h.permisos.ver && h.ruta)
         .map(h => {
           if (h.hijos && h.hijos.length > 0) {
             return {
