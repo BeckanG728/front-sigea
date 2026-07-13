@@ -1,55 +1,88 @@
-import { Component, inject, signal, computed, effect, ViewChildren, QueryList, ElementRef, AfterViewInit } from '@angular/core';
+import { Component, inject, signal, computed, ViewChildren, QueryList, ElementRef, AfterViewInit, OnInit } from '@angular/core';
 import { DataService } from '../../../core/services/data.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { ShellStateService } from '../../../core/services/shell-state.service';
 import { PermisoMap } from '../../../core/models/permiso.model';
 import { ARBOL_PERMISOS, aplanarArbol, obtenerClavesGrupo, obtenerHojas, PERMISO_LABELS } from '../../../core/data/arbol-permisos';
 import type { ItemPlano } from '../../../core/data/arbol-permisos';
+import { ModalComponent } from '../../../shared/modal/modal.component';
+import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog.component';
+import { PermisosService } from './permisos.service';
+import type { PermisoPorFuncionalidad } from '../../../core/models/funcionalidad-api.model';
+
+interface RoleOption {
+  idRol: number;
+  key: string;
+  label: string;
+  css: string;
+  badgeLabel: string;
+  initials: string;
+}
 
 @Component({
   selector: 'app-permisos',
   standalone: true,
-  imports: [],
+  imports: [ModalComponent, ConfirmDialogComponent],
   templateUrl: './permisos.html',
   host: { style: 'flex: 1; min-height: 0; display: flex; flex-direction: column;' },
 })
-export class PermisosComponent implements AfterViewInit {
+export class PermisosComponent implements AfterViewInit, OnInit {
   data = inject(DataService);
   auth = inject(AuthService);
   private shellState = inject(ShellStateService);
+  private permisosService = inject(PermisosService);
 
   constructor() {
-    this.shellState.title.set('Permisos');
+    this.shellState.title.set('Roles y permisos');
     this.shellState.icon.set('bi bi-lock');
-    effect(() => {
-      this.selectedUserId();
-      this.syncPermState();
-    });
+  }
+
+  ngOnInit(): void {
+    this.cargarRoles();
   }
 
   readonly PERMISO_LABELS = PERMISO_LABELS;
   readonly COLUMNAS = ['ver', 'crear', 'editar', 'eliminar', 'imprimir'] as const;
 
-  selectedUserId = signal(3);
+  roles = signal<RoleOption[]>([]);
+  selectedRoleId = signal<number>(0);
   expandedGrupos = signal<Set<string>>(new Set(obtenerClavesGrupo(ARBOL_PERMISOS)));
   expandedHojas = signal<Set<string>>(new Set(
     obtenerHojas(ARBOL_PERMISOS).filter(h => !h.readonly).map(h => h.key)
   ));
   applyMsg = signal('');
+  nuevoRolModalVisible = signal(false);
+  nuevoRolError = signal('');
+  loading = signal(false);
   permState = signal<Record<string, Record<string, boolean>>>({});
+  confirmModalVisible = signal(false);
+  pendingDeleteRoleId = signal<number | null>(null);
 
   @ViewChildren('parentCb', { read: ElementRef }) parentCbs!: QueryList<ElementRef<HTMLInputElement>>;
   @ViewChildren('leafCb', { read: ElementRef }) leafCbs!: QueryList<ElementRef<HTMLInputElement>>;
 
-  selectedUser = computed(() => this.data.usuarios().find(u => u.id === this.selectedUserId()) ?? null);
-  permisosRol = computed(() => {
-    const u = this.selectedUser();
-    return u ? (this.data.permisosPorRol()[u.rol] || {}) : {};
-  });
-  roleCss = computed(() => {
-    const u = this.selectedUser();
-    return u?.rol === 'superusuario' ? 'su' : u?.rol ?? '';
-  });
+  selectedRole = computed(() => this.roles().find(r => r.idRol === this.selectedRoleId()) ?? null);
+
+  private readonly PALETA_ROLES: Record<string, { bg: string; border: string }> = {
+    superusuario: { bg: '#efe7fc', border: '#7c3aed' },
+    secretaria:  { bg: '#fef0e1', border: '#f97316' },
+    director:    { bg: '#e2f6ea', border: '#0f9d58' },
+  };
+
+  private readonly PALETA_DINAMICA = [
+    { bg: '#e8f0fe', border: '#4285f4' },
+  ];
+
+  selectedRoleCss = computed(() => this.selectedRole()?.key ?? '');
+
+  getRoleStyle(role: RoleOption): Record<string, string> {
+    const especifico = this.PALETA_ROLES[role.key];
+    if (especifico) {
+      return { 'background-color': especifico.bg, 'border': `1px solid ${especifico.border}` };
+    }
+    const pal = this.PALETA_DINAMICA[(role.idRol - 1) % this.PALETA_DINAMICA.length];
+    return { 'background-color': pal.bg, 'border': `1px solid ${pal.border}` };
+  }
 
   arbolPlano = computed(() => {
     const expanded = this.expandedGrupos();
@@ -94,15 +127,82 @@ export class PermisosComponent implements AfterViewInit {
     this.updateIndeterminate();
   }
 
-  private syncPermState(): void {
-    const perms = this.permisosRol();
+  private cargarRoles(): void {
+    this.loading.set(true);
+    this.permisosService.listarRoles().subscribe({
+      next: (rolesApi) => {
+        const mapped: RoleOption[] = rolesApi.map(r => {
+          const lowerKey = r.nombre.toLowerCase();
+          return {
+            idRol: r.idRol,
+            key: lowerKey,
+            label: r.nombre,
+            css: lowerKey,
+            badgeLabel: lowerKey,
+            initials: r.nombre.substring(0, 2),
+          };
+        });
+        this.roles.set(mapped);
+        if (mapped.length > 0) {
+          this.selectedRoleId.set(mapped[0].idRol);
+          this.cargarPermisos(mapped[0].idRol);
+        }
+        this.loading.set(false);
+      },
+      error: () => {
+        this.roles.set([]);
+        this.loading.set(false);
+      },
+    });
+  }
+
+  private cargarPermisos(idRol: number): void {
+    this.loading.set(true);
+    this.permisosService.obtenerPermisos(idRol).subscribe({
+      next: (permisos) => {
+        this.aplicarPermisosBackend(permisos);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.syncPermStateFromLocal();
+        this.loading.set(false);
+      },
+    });
+  }
+
+  private aplicarPermisosBackend(permisos: PermisoPorFuncionalidad[]): void {
+    const permMap: Record<string, PermisoPorFuncionalidad> = {};
+    for (const p of permisos) {
+      permMap[p.codigo] = p;
+    }
     const state: Record<string, Record<string, boolean>> = {};
     for (const hoja of obtenerHojas(ARBOL_PERMISOS)) {
       if (hoja.readonly) continue;
-      const leafPerm = perms[hoja.key] ?? {};
+      const leafKey = hoja.key;
+      const backendCode = hoja.codigoBackend;
+      state[leafKey] = {};
+      if (backendCode && permMap[backendCode]) {
+        const bp = permMap[backendCode];
+        for (const p of hoja.permisosDisponibles ?? []) {
+          state[leafKey][p] = !!(bp as any)[p];
+        }
+      } else {
+        for (const p of hoja.permisosDisponibles ?? []) {
+          state[leafKey][p] = false;
+        }
+      }
+    }
+    this.permState.set(state);
+    setTimeout(() => this.updateIndeterminate());
+  }
+
+  private syncPermStateFromLocal(): void {
+    const state: Record<string, Record<string, boolean>> = {};
+    for (const hoja of obtenerHojas(ARBOL_PERMISOS)) {
+      if (hoja.readonly) continue;
       state[hoja.key] = {};
       for (const p of hoja.permisosDisponibles ?? []) {
-        state[hoja.key][p] = !!leafPerm[p];
+        state[hoja.key][p] = false;
       }
     }
     this.permState.set(state);
@@ -156,8 +256,9 @@ export class PermisosComponent implements AfterViewInit {
     return !!subs && Object.values(subs).some(Boolean) && !Object.values(subs).every(Boolean);
   }
 
-  selectUser(id: number): void {
-    this.selectedUserId.set(id);
+  selectRole(idRol: number): void {
+    this.selectedRoleId.set(idRol);
+    this.cargarPermisos(idRol);
   }
 
   toggleGrupo(key: string): void {
@@ -230,22 +331,132 @@ export class PermisosComponent implements AfterViewInit {
   }
 
   applyPermisos(): void {
-    const u = this.selectedUser();
-    if (!u) return;
-    const nuevo: Record<string, PermisoMap> = {};
-    for (const [leafKey, subs] of Object.entries(this.permState())) {
-      const boolSubs: PermisoMap = {};
-      let hasAny = false;
-      for (const [subKey, checked] of Object.entries(subs)) {
-        boolSubs[subKey] = checked;
-        if (checked) hasAny = true;
-      }
-      if (hasAny) nuevo[leafKey] = boolSubs;
+    const role = this.selectedRole();
+    if (!role) return;
+    this.loading.set(true);
+    const payload: PermisoPorFuncionalidad[] = [];
+    for (const hoja of obtenerHojas(ARBOL_PERMISOS)) {
+      if (hoja.readonly || !hoja.codigoBackend) continue;
+      const subs = this.permState()[hoja.key];
+      if (!subs) continue;
+      payload.push({
+        idFuncionalidad: 0,
+        codigo: hoja.codigoBackend,
+        ver: subs['ver'] ?? false,
+        crear: subs['crear'] ?? false,
+        editar: subs['editar'] ?? false,
+        eliminar: subs['eliminar'] ?? false,
+        imprimir: subs['imprimir'] ?? false,
+      });
     }
-    const perms = this.data.permisosPorRol();
-    perms[u.rol] = nuevo;
-    this.data.permisosPorRol.set({ ...perms });
-    this.applyMsg.set('Permisos aplicados');
-    setTimeout(() => this.applyMsg.set(''), 1200);
+    this.permisosService.guardarPermisos(role.idRol, { permisos: payload }).subscribe({
+      next: () => {
+        this.applyMsg.set('Permisos aplicados');
+        setTimeout(() => this.applyMsg.set(''), 1200);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.applyMsg.set('Error al guardar permisos');
+        setTimeout(() => this.applyMsg.set(''), 2000);
+        this.loading.set(false);
+      },
+    });
+  }
+
+  openNuevoRolModal(): void {
+    this.nuevoRolError.set('');
+    this.nuevoRolModalVisible.set(true);
+  }
+
+  submitNuevoRol(name: string): void {
+    const trimmed = name.trim().toUpperCase();
+    if (!trimmed) {
+      this.nuevoRolError.set('El nombre del rol es obligatorio.');
+      return;
+    }
+    if (trimmed.includes(' ')) {
+      this.nuevoRolError.set('El nombre no debe contener espacios.');
+      return;
+    }
+    const key = trimmed.toLowerCase();
+    if (this.roles().some(r => r.key === key)) {
+      this.nuevoRolError.set('Ya existe un rol con ese nombre.');
+      return;
+    }
+    this.loading.set(true);
+    this.permisosService.crearRol({ nombre: trimmed }).subscribe({
+      next: (created) => {
+        const newRole: RoleOption = {
+          idRol: created.idRol,
+          key,
+          label: trimmed,
+          css: key,
+          badgeLabel: key,
+          initials: trimmed.substring(0, 2),
+        };
+        this.roles.update(list => [...list, newRole]);
+        this.selectedRoleId.set(created.idRol);
+        this.syncPermStateFromLocal();
+        this.nuevoRolModalVisible.set(false);
+        this.nuevoRolError.set('');
+        this.loading.set(false);
+      },
+      error: () => {
+        this.nuevoRolError.set('Error al crear el rol en el servidor.');
+        this.loading.set(false);
+      },
+    });
+  }
+
+  eliminarRol(idRol: number): void {
+    const role = this.roles().find(r => r.idRol === idRol);
+    if (!role) return;
+    if (role.key === 'superusuario') {
+      alert('No se puede eliminar el rol Superusuario.');
+      return;
+    }
+    const count = this.data.usuarios().filter(u => u.rol === role.key).length;
+    if (count > 0) {
+      alert(`No se puede eliminar "${role.label}" porque tiene ${count} usuario(s) asignado(s).`);
+      return;
+    }
+    this.pendingDeleteRoleId.set(idRol);
+    this.confirmModalVisible.set(true);
+  }
+
+  pendingDeleteRole = computed(() => {
+    const id = this.pendingDeleteRoleId();
+    if (!id) return null;
+    return this.roles().find(r => r.idRol === id) ?? null;
+  });
+
+  cancelarEliminar(): void {
+    this.confirmModalVisible.set(false);
+    this.pendingDeleteRoleId.set(null);
+  }
+
+  ejecutarEliminar(): void {
+    const idRol = this.pendingDeleteRoleId();
+    if (!idRol) return;
+    this.confirmModalVisible.set(false);
+    this.pendingDeleteRoleId.set(null);
+    this.loading.set(true);
+    this.permisosService.eliminarRol(idRol).subscribe({
+      next: () => {
+        this.roles.update(list => list.filter(r => r.idRol !== idRol));
+        if (this.selectedRoleId() === idRol) {
+          const remaining = this.roles();
+          if (remaining.length > 0) {
+            this.selectedRoleId.set(remaining[0].idRol);
+            this.cargarPermisos(remaining[0].idRol);
+          }
+        }
+        this.loading.set(false);
+      },
+      error: () => {
+        alert('No se pudo eliminar el rol. Verifique que no tenga usuarios asignados.');
+        this.loading.set(false);
+      },
+    });
   }
 }

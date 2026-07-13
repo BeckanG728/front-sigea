@@ -1,6 +1,8 @@
 :root {
   --color-su: #6d28d9;
   --color-su-bg: #efe7fc;
+  --color-superusuario: #6d28d9;
+  --color-superusuario-bg: #efe7fc;
   --color-director: #0f9d58;
   --color-director-bg: #e2f6ea;
   --color-secretaria: #f97316;
@@ -190,6 +192,10 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
 .badge--su { background: var(--color-su-bg); color: var(--color-su); }
 .badge--director { background: var(--color-director-bg); color: var(--color-director); }
 .badge--secretaria { background: var(--color-secretaria-bg); color: var(--color-secretaria); }
+.perm-tree input[type="checkbox"] { accent-color: #4285f4; }
+.perm-tree--superusuario input[type="checkbox"] { accent-color: var(--color-su); }
+.perm-tree--director input[type="checkbox"] { accent-color: var(--color-director); }
+.perm-tree--secretaria input[type="checkbox"] { accent-color: var(--color-secretaria); }
 
 .avatar {
   width: 34px;

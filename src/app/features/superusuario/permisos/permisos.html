@@ -1,48 +1,62 @@
 <div class="split-layout split-layout--wide"
-       [style.--role-color]="'var(--color-' + roleCss() + ')'">
+       [style.--role-color]="'var(--color-' + (selectedRole()?.css ?? '') + ')'">
     <div class="card" style="align-self: start">
-      <div class="card__title"><i class="bi bi-people"></i> Usuarios</div>
+      <div class="flex-between" style="margin-bottom:12px">
+        <div class="card__title" style="border:none;margin:0;padding:0"><i class="bi bi-person-badge"></i> Roles</div>
+        <button class="btn btn--primary btn--sm" (click)="openNuevoRolModal()" [disabled]="loading()"><i class="bi bi-plus-lg"></i> Agregar rol</button>
+      </div>
+      @if (loading() && roles().length === 0) {
+        <div class="text-muted p-3" style="text-align:center"><i class="bi bi-arrow-repeat"></i> Cargando roles...</div>
+      }
       <div class="table-wrap">
         <table class="table">
-          <thead><tr><th>Nombre</th><th>Rol</th></tr></thead>
+          <thead><tr><th>Rol</th><th>Acciones</th></tr></thead>
           <tbody>
-            @for (u of data.usuarios(); track u.id) {
-              <tr [class.row--selected]="u.id === selectedUserId()"
-                  (click)="selectUser(u.id)" style="cursor:pointer">
-                <td>{{ u.nombre }}</td>
+            @for (role of roles(); track role.idRol) {
+              <tr [class.row--selected]="role.idRol === selectedRoleId()"
+                  (click)="selectRole(role.idRol)" style="cursor:pointer">
                 <td>
-                  <span class="badge"
-                        [class.badge--su]="u.rol === 'superusuario'"
-                        [class.badge--director]="u.rol === 'director'"
-                        [class.badge--secretaria]="u.rol === 'secretaria'">
-                    <span>{{ u.rol === 'superusuario' ? 'superusuario' : u.rol }}</span>
+                  <span class="badge" [style]="getRoleStyle(role)">
+                    <span>{{ role.label }}</span>
                   </span>
+                </td>
+                <td>
+                  <button class="btn btn--icon btn--outline btn--sm"
+                          [disabled]="role.key === 'superusuario' || loading()"
+                          (click)="$event.stopPropagation(); eliminarRol(role.idRol)"
+                          title="Eliminar rol">
+                    <i class="bi bi-trash"></i>
+                  </button>
                 </td>
               </tr>
             }
           </tbody>
         </table>
-  </div>
-</div>
+      </div>
+    </div>
 
     <div class="card card--permisos">
       <div class="card__title">
-        <i class="bi bi-lock"></i> Permisos — {{ selectedUser()?.nombre }}
-        @if (selectedUser()) {
-          <span class="badge"
-                [class.badge--su]="selectedUser()!.rol === 'superusuario'"
-                [class.badge--director]="selectedUser()!.rol === 'director'"
-                [class.badge--secretaria]="selectedUser()!.rol === 'secretaria'">
-            <span>{{ roleCss() }}</span>
+        <i class="bi bi-lock"></i> Permisos — {{ selectedRole()?.label ?? '—' }}
+        @if (selectedRole()) {
+          <span class="badge" [style]="getRoleStyle(selectedRole()!)">
+            <span>{{ selectedRole()!.badgeLabel }}</span>
           </span>
         }
       </div>
       <div class="flex gap-2 mt-2" style="margin-bottom:8px">
-        <button class="btn btn--outline btn--sm" (click)="expandAll()">Expandir todos</button>
-        <button class="btn btn--outline btn--sm" (click)="collapseAll()">Colapsar todos</button>
+        <button class="btn btn--outline btn--sm" (click)="expandAll()" [disabled]="loading()">Expandir todos</button>
+        <button class="btn btn--outline btn--sm" (click)="collapseAll()" [disabled]="loading()">Colapsar todos</button>
       </div>
 
-      <div class="perm-tree">
+      @if (loading()) {
+        <div class="text-muted p-3" style="text-align:center"><i class="bi bi-arrow-repeat"></i> Cargando permisos...</div>
+      }
+
+      <div class="perm-tree"
+           [class.perm-tree--superusuario]="selectedRoleCss() === 'superusuario'"
+           [class.perm-tree--director]="selectedRoleCss() === 'director'"
+           [class.perm-tree--secretaria]="selectedRoleCss() === 'secretaria'">
         @for (item of arbolPlano(); track item.key) {
           @if (item.tipo === 'grupo' || item.tipo === 'subgrupo') {
             @let pk = item.key;
@@ -101,13 +115,46 @@
         }
       </div>
 
-      <button class="btn btn--dark btn--block mt-3" (click)="applyPermisos()">
+      <button class="btn btn--dark btn--block mt-3" [disabled]="loading() || selectedRole()?.key === 'superusuario'" (click)="applyPermisos()">
         @if (applyMsg()) {
           <i class="bi bi-check-lg"></i> {{ applyMsg() }}
         } @else {
-          <i class="bi bi-check-lg"></i> Aplicar permisos
+          @if (loading()) {
+            <i class="bi bi-arrow-repeat"></i> Guardando...
+          } @else {
+            <i class="bi bi-check-lg"></i> Aplicar permisos
+          }
         }
       </button>
     </div>
   </div>
 
+<app-modal [visible]="nuevoRolModalVisible()" title="Nuevo rol"
+           (close)="nuevoRolModalVisible.set(false)">
+  <form #nuevoRolForm (submit)="submitNuevoRol(nuevoRolInput.value); $event.preventDefault()">
+    <div class="field">
+      <label>Nombre del rol *</label>
+      <input #nuevoRolInput name="nombre" placeholder="Ej. ADMINISTRADOR"
+             style="text-transform:uppercase"
+             (input)="nuevoRolError.set('')" required autocomplete="off" />
+    </div>
+    @if (nuevoRolError()) {
+      <div class="alert alert--danger">
+        <i class="bi bi-exclamation-triangle alert__icon"></i>
+        <span>{{ nuevoRolError() }}</span>
+      </div>
+    }
+    <div class="flex gap-2 mt-3" style="justify-content:flex-end">
+      <button type="button" class="btn btn--outline" (click)="nuevoRolModalVisible.set(false)">Cancelar</button>
+      <button type="submit" class="btn btn--dark" [disabled]="loading()"><i class="bi bi-check-lg"></i> Crear rol</button>
+    </div>
+  </form>
+</app-modal>
+
+<app-confirm-modal [visible]="confirmModalVisible()"
+                   title="Eliminar rol"
+                   [message]="'¿Eliminar el rol &quot;' + (pendingDeleteRole()?.label ?? '') + '&quot;?'"
+                   confirmText="Eliminar"
+                   variant="danger"
+                   (confirm)="ejecutarEliminar()"
+                   (cancel)="cancelarEliminar()"></app-confirm-modal>

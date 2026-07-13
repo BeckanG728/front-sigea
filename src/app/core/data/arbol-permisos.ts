@@ -1,4 +1,5 @@
 export interface RamaPermiso {
+  codigoBackend?: string;
   nombre: string;
   key: string;
   icon: string;
@@ -19,23 +20,22 @@ export const ARBOL_PERMISOS: RamaPermiso[] = [
   {
     nombre: 'Seguridad', key: 'seguridad', icon: 'bi bi-shield-lock',
     hijos: [
-      { nombre: 'Usuarios', key: 'usuarios', icon: 'bi bi-people', permisosDisponibles: ['ver', 'crear', 'editar', 'eliminar'] },
-      { nombre: 'Roles', key: 'roles', icon: 'bi bi-person-badge', permisosDisponibles: ['ver', 'crear', 'editar', 'eliminar'] },
-      { nombre: 'Permisos', key: 'permisos', icon: 'bi bi-lock', permisosDisponibles: ['ver', 'editar'] },
-      { nombre: 'Parámetros', key: 'parametros', icon: 'bi bi-sliders', permisosDisponibles: ['ver', 'editar'] },
-      { nombre: 'Mi Cuenta', key: 'mi-cuenta', icon: 'bi bi-key', readonly: true },
+      { nombre: 'Usuarios', key: 'usuarios', codigoBackend: 'USUARIOS', icon: 'bi bi-people', permisosDisponibles: ['ver', 'crear', 'editar', 'eliminar'] },
+      { nombre: 'Roles', key: 'roles', codigoBackend: 'ROLES', icon: 'bi bi-person-badge', permisosDisponibles: ['ver', 'crear', 'editar', 'eliminar'] },
+      { nombre: 'Parámetros', key: 'parametros', codigoBackend: 'PARAMETROS', icon: 'bi bi-sliders', permisosDisponibles: ['ver', 'editar'] },
+      { nombre: 'Mi Cuenta', key: 'mi-cuenta', codigoBackend: 'MI_CUENTA', icon: 'bi bi-key', readonly: true },
     ],
   },
   {
     nombre: 'Académico', key: 'academico', icon: 'bi bi-book',
     hijos: [
-      { nombre: 'Aulas', key: 'aulas', icon: 'bi bi-door-open', permisosDisponibles: ['ver', 'crear', 'editar', 'eliminar'] },
-      { nombre: 'Alumnos', key: 'alumnos', icon: 'bi bi-mortarboard', permisosDisponibles: ['ver', 'crear', 'editar', 'eliminar'] },
-      { nombre: 'Conceptos', key: 'conceptos', icon: 'bi bi-receipt', permisosDisponibles: ['ver', 'crear', 'editar', 'eliminar'] },
+      { nombre: 'Aulas', key: 'aulas', codigoBackend: 'AULAS', icon: 'bi bi-door-open', permisosDisponibles: ['ver', 'crear', 'editar', 'eliminar'] },
+      { nombre: 'Alumnos', key: 'alumnos', codigoBackend: 'ALUMNOS', icon: 'bi bi-mortarboard', permisosDisponibles: ['ver', 'crear', 'editar', 'eliminar'] },
+      { nombre: 'Conceptos', key: 'conceptos', codigoBackend: 'CONCEPTOS', icon: 'bi bi-receipt', permisosDisponibles: ['ver', 'crear', 'editar', 'eliminar'] },
       {
         nombre: 'Matrícula', key: 'matricula', icon: 'bi bi-pencil-square',
         hijos: [
-          { nombre: 'Registrar Matrícula', key: 'registrar-matricula', icon: 'bi bi-file-text', permisosDisponibles: ['ver', 'crear'] },
+          { nombre: 'Registrar Matrícula', key: 'registrar-matricula', codigoBackend: 'MATRICULA_REGISTRAR', icon: 'bi bi-file-text', permisosDisponibles: ['ver', 'crear'] },
         ],
       },
     ],
@@ -43,23 +43,23 @@ export const ARBOL_PERMISOS: RamaPermiso[] = [
   {
     nombre: 'Pagos', key: 'pagos', icon: 'bi bi-credit-card',
     hijos: [
-      { nombre: 'Registrar Pago', key: 'registrar-pago', icon: 'bi bi-cash', permisosDisponibles: ['ver', 'crear'] },
-      { nombre: 'Historial de Deudas', key: 'historial-deudas', icon: 'bi bi-clock-history', permisosDisponibles: ['ver'] },
+      { nombre: 'Registrar Pago', key: 'registrar-pago', codigoBackend: 'PAGO_REGISTRAR', icon: 'bi bi-cash', permisosDisponibles: ['ver', 'crear'] },
+      { nombre: 'Historial de Deudas', key: 'historial-deudas', codigoBackend: 'DEUDA_HISTORIAL', icon: 'bi bi-clock-history', permisosDisponibles: ['ver'] },
     ],
   },
   {
     nombre: 'Auditoría', key: 'auditoria', icon: 'bi bi-search',
     hijos: [
-      { nombre: 'Registro de Auditoría', key: 'registro-auditoria', icon: 'bi bi-list-check', permisosDisponibles: ['ver', 'imprimir'] },
+      { nombre: 'Registro de Auditoría', key: 'registro-auditoria', codigoBackend: 'AUDITORIA_REGISTRO', icon: 'bi bi-list-check', permisosDisponibles: ['ver', 'imprimir'] },
     ],
   },
   {
     nombre: 'Reportes', key: 'reportes', icon: 'bi bi-file-earmark-bar-graph',
     hijos: [
-      { nombre: 'Reporte de Matrícula', key: 'reporte-matricula', icon: 'bi bi-file-text', permisosDisponibles: ['ver', 'imprimir'] },
-      { nombre: 'Reporte de Vacantes', key: 'reporte-vacantes', icon: 'bi bi-door-open', permisosDisponibles: ['ver', 'imprimir'] },
-      { nombre: 'Reporte de Deudas', key: 'reporte-deudas', icon: 'bi bi-cash-stack', permisosDisponibles: ['ver', 'imprimir'] },
-      { nombre: 'Reporte de Caja', key: 'reporte-caja', icon: 'bi bi-cash-coin', permisosDisponibles: ['ver', 'imprimir'] },
+      { nombre: 'Reporte de Matrícula', key: 'reporte-matricula', codigoBackend: 'REPORTE_MATRICULA', icon: 'bi bi-file-text', permisosDisponibles: ['ver', 'imprimir'] },
+      { nombre: 'Reporte de Vacantes', key: 'reporte-vacantes', codigoBackend: 'REPORTE_VACANTES', icon: 'bi bi-door-open', permisosDisponibles: ['ver', 'imprimir'] },
+      { nombre: 'Reporte de Deudas', key: 'reporte-deudas', codigoBackend: 'REPORTE_DEUDAS', icon: 'bi bi-cash-stack', permisosDisponibles: ['ver', 'imprimir'] },
+      { nombre: 'Reporte de Caja', key: 'reporte-caja', codigoBackend: 'REPORTE_CAJA', icon: 'bi bi-cash-coin', permisosDisponibles: ['ver', 'imprimir'] },
     ],
   },
 ];
@@ -136,4 +136,16 @@ export function obtenerHojas(nodos: RamaPermiso[]): RamaPermiso[] {
     }
   }
   return hojas;
+}
+
+export const LEAF_KEY_TO_BACKEND_CODE: Record<string, string> = {};
+for (const h of obtenerHojas(ARBOL_PERMISOS)) {
+  if (h.codigoBackend) {
+    LEAF_KEY_TO_BACKEND_CODE[h.key] = h.codigoBackend;
+  }
+}
+
+export const BACKEND_CODE_TO_LEAF_KEY: Record<string, string> = {};
+for (const [leafKey, codigo] of Object.entries(LEAF_KEY_TO_BACKEND_CODE)) {
+  BACKEND_CODE_TO_LEAF_KEY[codigo] = leafKey;
 }

@@ -8,7 +8,6 @@ export function getSuperusuarioMenu(): MenuEntry[] {
       children: [
         { icon: 'bi bi-people', label: 'Usuarios', route: '/su/usuarios' },
         { icon: 'bi bi-person-badge', label: 'Roles', route: '/su/roles' },
-        { icon: 'bi bi-lock', label: 'Permisos', route: '/su/permisos' },
         { icon: 'bi bi-sliders', label: 'Parámetros', route: '/su/parametros' },
         { icon: 'bi bi-key', label: 'Mi cuenta', route: '/su/clave' },
       ],

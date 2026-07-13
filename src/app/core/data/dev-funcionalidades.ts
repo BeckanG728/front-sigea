@@ -7,8 +7,7 @@ export function getSuperusuarioTree(): FuncionalidadNode[] {
       permisos: FULL_PERMISOS,
       hijos: [
         { idFuncionalidad: 10, codigo: 'USUARIOS', nombre: 'Usuarios', ruta: '/su/usuarios', icon: getIcon('Usuarios'), permisos: FULL_PERMISOS },
-        { idFuncionalidad: 11, codigo: 'ROLES', nombre: 'Roles', ruta: '/su/roles', icon: getIcon('Roles'), permisos: FULL_PERMISOS },
-        { idFuncionalidad: 12, codigo: 'PERMISOS', nombre: 'Permisos', ruta: '/su/permisos', icon: getIcon('Permisos'), permisos: FULL_PERMISOS },
+        { idFuncionalidad: 12, codigo: 'ROLES', nombre: 'Roles', ruta: '/su/roles', icon: getIcon('Roles'), permisos: FULL_PERMISOS },
         { idFuncionalidad: 13, codigo: 'PARAMETROS', nombre: 'Parámetros', ruta: '/su/parametros', icon: getIcon('Parámetros'), permisos: FULL_PERMISOS },
         { idFuncionalidad: 14, codigo: 'MI_CUENTA', nombre: 'Mi Cuenta', ruta: '/su/clave', icon: getIcon('Mi Cuenta'), permisos: FULL_PERMISOS },
       ],

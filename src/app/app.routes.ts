@@ -30,14 +30,9 @@ export const routes: Routes = [
             path: 'roles',
             canActivate: [funcionalidadGuard('/su/roles')],
             loadComponent: () =>
-              import('./features/superusuario/roles/roles.component').then(m => m.RolesComponent)
-          },
-          {
-            path: 'permisos',
-            canActivate: [funcionalidadGuard('/su/permisos')],
-            loadComponent: () =>
               import('./features/superusuario/permisos/permisos.component').then(m => m.PermisosComponent)
           },
+          { path: 'permisos', redirectTo: 'roles', pathMatch: 'full' },
           {
             path: 'parametros',
             canActivate: [funcionalidadGuard('/su/parametros')],

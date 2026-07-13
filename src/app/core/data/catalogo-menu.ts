@@ -12,7 +12,6 @@ export const CATALOGO_MENU: Record<string, CatalogoEntry> = {
 
   USUARIOS:            { ruta: ':prefix/usuarios',          icono: 'bi bi-people' },
   ROLES:               { ruta: ':prefix/roles',             icono: 'bi bi-person-badge' },
-  PERMISOS:            { ruta: ':prefix/permisos',          icono: 'bi bi-lock' },
   PARAMETROS:          { ruta: ':prefix/parametros',        icono: 'bi bi-sliders' },
   MI_CUENTA:           { ruta: ':prefix/clave',             icono: 'bi bi-key' },
   AULAS:               { ruta: ':prefix/aulas',             icono: 'bi bi-door-open' },
