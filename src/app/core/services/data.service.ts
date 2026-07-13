@@ -3,14 +3,12 @@ import { Injectable, signal } from '@angular/core';
 export interface Usuario {
   id: number;
   nombre: string;
-  username: string;
   doc: string;
   rol: string;
   estado: string;
   noEliminable?: boolean;
   bloqueado: boolean;
   permisosVisibles: boolean;
-  dosFactorActivo: boolean;
   secreto2FA: string | null;
 }
 

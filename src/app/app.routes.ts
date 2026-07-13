@@ -21,6 +21,12 @@ export const routes: Routes = [
         canActivate: [roleGuard(['superusuario'])],
         children: [
           {
+            path: '',
+            pathMatch: 'full',
+            loadComponent: () =>
+              import('./shared/panel-inicio/panel-inicio.component').then(m => m.PanelInicioComponent)
+          },
+          {
             path: 'usuarios',
             canActivate: [funcionalidadGuard('/su/usuarios')],
             loadComponent: () =>
@@ -44,6 +50,12 @@ export const routes: Routes = [
             canActivate: [funcionalidadGuard('/su/clave')],
             loadComponent: () =>
               import('./features/login/change-password/change-password.component').then(m => m.ChangePasswordComponent)
+          },
+          {
+            path: 'dashboard',
+            canActivate: [funcionalidadGuard('/su/dashboard')],
+            loadComponent: () =>
+              import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent)
           },
           {
             path: 'aulas',
@@ -102,9 +114,15 @@ export const routes: Routes = [
         children: [
           {
             path: '',
-            canActivate: [funcionalidadGuard('/director')],
+            pathMatch: 'full',
             loadComponent: () =>
-              import('./features/director/dashboard/dashboard.component').then(m => m.DirectorDashboardComponent)
+              import('./shared/panel-inicio/panel-inicio.component').then(m => m.PanelInicioComponent)
+          },
+          {
+            path: 'dashboard',
+            canActivate: [funcionalidadGuard('/director/dashboard')],
+            loadComponent: () =>
+              import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent)
           },
           {
             path: 'aulas',
@@ -143,6 +161,18 @@ export const routes: Routes = [
         path: 'secretaria',
         canActivate: [roleGuard(['secretaria'])],
         children: [
+          {
+            path: '',
+            pathMatch: 'full',
+            loadComponent: () =>
+              import('./shared/panel-inicio/panel-inicio.component').then(m => m.PanelInicioComponent)
+          },
+          {
+            path: 'dashboard',
+            canActivate: [funcionalidadGuard('/secretaria/dashboard')],
+            loadComponent: () =>
+              import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent)
+          },
           {
             path: 'aulas',
             canActivate: [funcionalidadGuard('/secretaria/aulas')],

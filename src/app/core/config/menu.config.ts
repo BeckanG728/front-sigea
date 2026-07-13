@@ -56,7 +56,7 @@ export function getDirectorMenu(): MenuEntry[] {
       type: 'group', group: 'Académico', dataGroup: 'academico',
       icon: 'bi bi-book',
       children: [
-        { icon: 'bi bi-building', label: 'Panel director', route: '/director' },
+        { icon: 'bi bi-speedometer2', label: 'Dashboard', route: '/director/dashboard' },
         { icon: 'bi bi-door-open', label: 'Aulas', route: '/director/aulas' },
         { icon: 'bi bi-mortarboard', label: 'Alumnos', route: '/director/alumnos' },
         { icon: 'bi bi-pencil-square', label: 'Registrar Matrícula', route: '/director/matricula/registrar' },

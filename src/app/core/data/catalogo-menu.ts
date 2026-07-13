@@ -26,5 +26,5 @@ export const CATALOGO_MENU: Record<string, CatalogoEntry> = {
   REPORTE_DEUDAS:      { ruta: '/reportes/deudas',         icono: 'bi bi-cash-stack' },
   REPORTE_CAJA:        { ruta: '/reportes/caja',           icono: 'bi bi-cash-coin' },
 
-  PANEL_DIRECTOR:      { ruta: ':prefix',                   icono: 'bi bi-building' },
+  DASHBOARD:           { ruta: ':prefix/dashboard',        icono: 'bi bi-speedometer2' },
 };

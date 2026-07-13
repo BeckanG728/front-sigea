@@ -18,19 +18,3 @@ export function uniqueDocValidator(dataService: DataService): AsyncValidatorFn {
     );
   };
 }
-
-export function uniqueEmailValidator(dataService: DataService): AsyncValidatorFn {
-  return (control: AbstractControl): Observable<ValidationErrors | null> => {
-    const value = control.value;
-    if (!value) return of(null);
-    return of(value).pipe(
-      debounceTime(300),
-      map(v => {
-        const exists = dataService.usuarios().some(u => u.username === v);
-        return exists ? { unique: 'El email ya está registrado' } : null;
-      }),
-      catchError(() => of(null)),
-      take(1),
-    );
-  };
-}

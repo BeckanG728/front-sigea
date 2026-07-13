@@ -34,9 +34,9 @@
                   <td>
                     <span class="badge"
                           [class.badge--success]="u.estado === 'activo' && !u.bloqueado"
-                          [class.badge--danger]="u.estado === 'eliminado'"
+                          [class.badge--danger]="u.estado === 'inactivo'"
                           [class.badge--warning]="u.bloqueado">
-                      <span>{{ u.estado === 'activo' && !u.bloqueado ? 'activo' : u.estado === 'eliminado' ? 'eliminado' : 'bloqueado' }}</span>
+                      <span>{{ u.estado === 'activo' && !u.bloqueado ? 'activo' : u.estado === 'inactivo' ? 'inactivo' : 'bloqueado' }}</span>
                     </span>
                   </td>
                   <td>
@@ -45,7 +45,7 @@
                             (click)="$event.stopPropagation(); toggleVisibility(u.id)">
                       <i class="bi" [class.bi-eye]="u.permisosVisibles" [class.bi-eye-slash]="!u.permisosVisibles" style="font-size:14px"></i>
                     </button>
-                    @if (u.username !== auth.usuario() && !u.noEliminable) {
+                    @if (u.id !== auth.idUsuario() && !u.noEliminable) {
                       <button type="button" class="btn btn--icon btn--outline btn--sm"
                               title="Editar" (click)="$event.stopPropagation(); openEditarModal(u)">
                         <i class="bi bi-pencil" style="font-size:14px"></i>
@@ -63,6 +63,24 @@
             </tbody>
           </table>
         </div>
+        @if (totalPaginas() > 1) {
+          <div class="flex-between" style="padding:8px 0">
+            <button class="btn btn--outline btn--sm"
+                    [disabled]="!hayPaginaAnterior()"
+                    (click)="paginaAnterior()">
+              <i class="bi bi-chevron-left"></i> Anterior
+            </button>
+            <span style="font-size:13px">
+              Página {{ paginaActual() + 1 }} de {{ totalPaginas() }}
+              ({{ totalElementos() }} total)
+            </span>
+            <button class="btn btn--outline btn--sm"
+                    [disabled]="!hayPaginaSiguiente()"
+                    (click)="paginaSiguiente()">
+              Siguiente <i class="bi bi-chevron-right"></i>
+            </button>
+          </div>
+        }
         @if (isAdminSelected()) {
           <p class="note mt-2"><i class="bi bi-info-circle"></i> admin no eliminable</p>
         }

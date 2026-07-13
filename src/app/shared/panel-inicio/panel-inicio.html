@@ -1,0 +1,5 @@
+<div style="height:100%; display:grid; place-items:center; text-align:center; font-size: 50px; font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;">
+  <h2 [style.color]="'var(--color-' + (auth.role()?.css ?? 'text') + ')'">
+    Bienvenido {{ auth.usuario() }}
+  </h2>
+</div>

@@ -1,5 +1,5 @@
 export interface LoginRequest {
-  usuario: string;
+  email: string;
   password: string;
 }
 
@@ -7,7 +7,7 @@ export interface LoginResponse {
   token: string;
   expiresIn: number;
   idUsuario: number;
-  nombreUsuario: string;
+  nombreCompleto: string;
   idRol: number;
   nombreRol: string;
   login2fa: boolean;

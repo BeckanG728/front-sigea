@@ -56,7 +56,7 @@ export class AuthService {
   }
 
   login(usuario: string, password: string): Observable<LoginResponse> {
-    const body: LoginRequest = { usuario, password };
+    const body: LoginRequest = { email: usuario, password };
     return this.http.post<LoginResponse>(`${API_BASE}/api/auth/login`, body).pipe(
       tap(res => {
         if (res.login2fa) {
@@ -75,11 +75,11 @@ export class AuthService {
         if (!roleInfo) return of(res);
 
         localStorage.setItem('role', roleKey);
-        localStorage.setItem('username', res.nombreUsuario);
+        localStorage.setItem('username', res.nombreCompleto);
         localStorage.setItem('idUsuario', String(res.idUsuario));
         localStorage.setItem('idRol', String(res.idRol));
         this.role.set(roleInfo);
-        this.usuario.set(res.nombreUsuario);
+        this.usuario.set(res.nombreCompleto);
         this.idUsuario.set(res.idUsuario);
         this.idRol.set(res.idRol);
 
@@ -165,10 +165,16 @@ export class AuthService {
   get homeRoute(): string {
     const r = this.role();
     if (!r) return '/login';
+    // Apunta al contenedor "en blanco" del rol (ver PanelInicioComponent), no a una
+    // vista funcional puntual. Si se apuntara directo a una vista (p. ej. /secretaria/alumnos)
+    // y esa vista no tuviera el permiso asignado, el funcionalidadGuard la rechazaría justo
+    // tras el login y el usuario quedaría sin ver nada. La ruta home nunca tiene
+    // funcionalidadGuard, así que el login siempre "resuelve" a algo visible, y el usuario
+    // navega desde el menú lateral (que ya filtra por permisos reales).
     const map: { [key: string]: string } = {
-      superusuario: '/su/usuarios',
+      superusuario: '/su',
       director: '/director',
-      secretaria: '/secretaria/matricula',
+      secretaria: '/secretaria',
     };
     return map[r.key] || '/login';
   }
@@ -204,6 +210,7 @@ export class AuthService {
     return this.http.get<{ permisos: any[] }>(`${API_BASE}/api/funcionalidades`).pipe(
       tap(response => {
         const enriched = this.enrichTree(response.permisos, routePrefix);
+        console.log(enriched)
         this.persistSession(enriched);
       }),
       map(response => this.enrichTree(response.permisos, routePrefix))

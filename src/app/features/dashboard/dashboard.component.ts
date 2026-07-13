@@ -1,21 +1,21 @@
 import { Component, computed, inject } from '@angular/core';
-import { DataService } from '../../../core/services/data.service';
-import { AuthService } from '../../../core/services/auth.service';
-import { ShellStateService } from '../../../core/services/shell-state.service';
+import { DataService } from '../../core/services/data.service';
+import { AuthService } from '../../core/services/auth.service';
+import { ShellStateService } from '../../core/services/shell-state.service';
 
 @Component({
-  selector: 'app-director-dashboard',
+  selector: 'app-dashboard',
   standalone: true,
   imports: [],
   templateUrl: './dashboard.html',
 })
-export class DirectorDashboardComponent {
+export class DashboardComponent {
   auth = inject(AuthService);
   private shellState = inject(ShellStateService);
 
   constructor(private data: DataService) {
-    this.shellState.title.set('Panel director');
-    this.shellState.icon.set('bi bi-building');
+    this.shellState.title.set('Dashboard');
+    this.shellState.icon.set('bi bi-speedometer2');
   }
 
   protected get matriculas() { return this.data.matriculasRecientes2026; }

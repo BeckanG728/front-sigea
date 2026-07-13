@@ -44,6 +44,14 @@ export class UsuariosComponent implements OnInit, OnDestroy {
   applyMsg = signal('');
   roles = signal<RoleResponse[]>([]);
 
+  paginaActual = signal(0);
+  totalPaginas = signal(0);
+  totalElementos = signal(0);
+  pageSize = signal(20);
+
+  hayPaginaAnterior = computed(() => this.paginaActual() > 0);
+  hayPaginaSiguiente = computed(() => this.paginaActual() < this.totalPaginas() - 1);
+
   tempModulePerms = signal<Record<string, boolean>>({});
 
   modulosDisponibles = computed(() => {
@@ -75,31 +83,45 @@ export class UsuariosComponent implements OnInit, OnDestroy {
       next: roles => this.roles.set(roles),
       error: () => this.roles.set([]),
     });
-    this.sub = this.usuariosService.listar().subscribe({
-      next: (usuarios) => {
-        const mapped = usuarios.map(u => ({
+    this.cargarPagina(0);
+  }
+
+  private cargarPagina(page: number): void {
+    this.loading.set(true);
+    this.sub?.unsubscribe();
+    this.sub = this.usuariosService.listar(page, this.pageSize()).subscribe({
+      next: (res) => {
+        const mapped = res.content.map(u => ({
           id: u.idUsuario,
-          nombre: `${u.nombre} ${u.apellido1}`.trim() || u.usuario,
-          username: u.usuario,
-          doc: u.dni || '—',
+          nombre: `${u.nombre} ${u.primerApellido}`.trim(),
+          doc: u.numeroDocumento || '—',
           rol: u.nombreRol.toLowerCase(),
-          estado: u.estado ? 'activo' : 'eliminado',
+          estado: u.estado ? 'activo' : 'inactivo',
           noEliminable: u.nombreRol === 'SUPERUSUARIO',
           bloqueado: false,
           permisosVisibles: true,
-          dosFactorActivo: u.dosFactorHabilitado,
           secreto2FA: null,
         }));
         this.usuarios.set(mapped);
         this.data.usuarios.set(mapped);
+        this.paginaActual.set(res.pageNumber);
+        this.totalPaginas.set(res.totalPages);
+        this.totalElementos.set(res.totalElements);
         this.loading.set(false);
       },
-      error: (err) => {
-        console.error('Error al cargar usuarios:', err);
+      error: () => {
         this.loadError.set('Error al cargar usuarios');
         this.loading.set(false);
       }
     });
+  }
+
+  paginaSiguiente(): void {
+    if (this.hayPaginaSiguiente()) this.cargarPagina(this.paginaActual() + 1);
+  }
+
+  paginaAnterior(): void {
+    if (this.hayPaginaAnterior()) this.cargarPagina(this.paginaActual() - 1);
   }
 
   ngOnDestroy(): void {
@@ -177,17 +199,17 @@ export class UsuariosComponent implements OnInit, OnDestroy {
     this.nuevoModalVisible.set(true);
   }
 
-  submitNuevo(nombre: string, apellido1: string, dni: string, rolKey: string): void {
+  submitNuevo(nombre: string, primerApellido: string, numeroDocumento: string, rolKey: string): void {
     if (!nombre.trim()) {
       this.nuevoError.set('El nombre es obligatorio.');
       return;
     }
-    if (!apellido1.trim()) {
+    if (!primerApellido.trim()) {
       this.nuevoError.set('El apellido es obligatorio.');
       return;
     }
-    if (!/^\d{8}$/.test(dni.trim())) {
-      this.nuevoError.set('El DNI debe tener exactamente 8 dígitos.');
+    if (!numeroDocumento.trim()) {
+      this.nuevoError.set('El número de documento es obligatorio.');
       return;
     }
     const rolEncontrado = this.roles().find(r => r.nombre.toUpperCase() === rolKey.toUpperCase());
@@ -196,24 +218,10 @@ export class UsuariosComponent implements OnInit, OnDestroy {
       return;
     }
     const idRol = rolEncontrado.idRol;
-    this.usuariosService.crear({ nombre: nombre.trim(), apellido1: apellido1.trim(), dni: dni.trim(), password: 'Sigea@2026', idRol }).subscribe({
-      next: (u) => {
-        const nuevo = {
-          id: u.idUsuario,
-          nombre: `${u.nombre} ${u.apellido1}`.trim() || u.usuario,
-          username: u.usuario,
-          doc: u.dni,
-          rol: u.nombreRol.toLowerCase(),
-          estado: u.estado ? 'activo' : 'eliminado',
-          noEliminable: u.nombreRol === 'SUPERUSUARIO',
-          bloqueado: false,
-          permisosVisibles: true,
-          dosFactorActivo: u.dosFactorHabilitado,
-          secreto2FA: null,
-        };
-        this.usuarios.update(list => [...list, nuevo]);
-        this.data.usuarios.set(this.usuarios());
-        this.selectedUserId.set(u.idUsuario);
+    this.usuariosService.crear({ nombre: nombre.trim(), primerApellido: primerApellido.trim(), numeroDocumento: numeroDocumento.trim(), idRol }).subscribe({
+      next: (res) => {
+        this.cargarPagina(this.paginaActual());
+        this.selectedUserId.set(res.id ?? 0);
         this.nuevoModalVisible.set(false);
         this.nuevoError.set('');
       },
@@ -236,16 +244,28 @@ export class UsuariosComponent implements OnInit, OnDestroy {
       this.editError.set('El nombre completo es obligatorio.');
       return;
     }
-    const usuarios = this.usuarios();
-    const target = usuarios.find(x => x.id === u.id);
-    if (target) {
-      target.nombre = nombre.trim();
-      target.doc = doc.trim() || '—';
-      target.rol = rol.toLowerCase();
+    const [nombreParte, ...apellidoPartes] = nombre.trim().split(' ');
+    const primerApellido = apellidoPartes.join(' ');
+    const rolEncontrado = this.roles().find(r => r.nombre.toUpperCase() === rol.toUpperCase());
+    if (!rolEncontrado) {
+      this.editError.set('Rol inválido.');
+      return;
     }
-    this.usuarios.set([...usuarios]);
-    this.data.usuarios.set([...usuarios]);
-    this.editarModalVisible.set(false);
+    this.usuariosService.actualizar(u.id, {
+      nombre: nombreParte,
+      primerApellido: primerApellido || '—',
+      numeroDocumento: doc.trim() || '—',
+      idRol: rolEncontrado.idRol,
+    }).subscribe({
+      next: () => {
+        this.cargarPagina(this.paginaActual());
+        this.editarModalVisible.set(false);
+        this.editError.set('');
+      },
+      error: () => {
+        this.editError.set('Error al actualizar usuario');
+      },
+    });
   }
 
   confirmEliminar(u: User): void {
@@ -256,11 +276,17 @@ export class UsuariosComponent implements OnInit, OnDestroy {
   ejecutarEliminar(): void {
     const u = this.eliminarUsuario();
     if (!u) return;
-    u.estado = u.estado === 'activo' ? 'eliminado' : 'activo';
-    this.usuarios.set([...this.usuarios()]);
-    this.data.usuarios.set(this.usuarios());
-    this.eliminarModalVisible.set(false);
-    this.eliminarUsuario.set(null);
+    this.usuariosService.eliminar(u.id).subscribe({
+      next: () => {
+        this.cargarPagina(this.paginaActual());
+        this.eliminarModalVisible.set(false);
+        this.eliminarUsuario.set(null);
+      },
+      error: () => {
+        this.eliminarModalVisible.set(false);
+        this.eliminarUsuario.set(null);
+      },
+    });
   }
 
   toggleModulePerm(key: string, event: Event): void {
