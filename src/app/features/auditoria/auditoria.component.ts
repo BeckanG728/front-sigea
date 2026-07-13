@@ -1,9 +1,8 @@
-import { Component, computed, signal, inject } from '@angular/core';
+import { Component, computed, signal, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
 import { ShellStateService } from '../../core/services/shell-state.service';
-import { AuditService } from '../../core/services/audit.service';
-import { DataService } from '../../core/services/data.service';
+import { AuditoriaApiService, AuditoriaItem } from '../../core/services/auditoria-api.service';
 
 interface FiltrosAuditoria {
   fecha: string;
@@ -18,18 +17,16 @@ interface FiltrosAuditoria {
   imports: [FormsModule],
   templateUrl: './auditoria.html',
 })
-export class AuditoriaComponent {
+export class AuditoriaComponent implements OnInit {
   readonly PAGE_SIZE = 10;
   readonly page = signal(1);
   readonly filtros = signal<FiltrosAuditoria>({
-    fecha: '',
-    modulo: '',
-    usuario: '',
-    operacion: '',
+    fecha: '', modulo: '', usuario: '', operacion: '',
   });
 
+  private auditoriaApi = inject(AuditoriaApiService);
+
   constructor(
-    readonly data: DataService,
     private auth: AuthService,
     private shellState: ShellStateService,
   ) {
@@ -37,19 +34,27 @@ export class AuditoriaComponent {
     this.shellState.icon.set('bi bi-clock-history');
   }
 
+  ngOnInit(): void {
+    this.auditoriaApi.cargar();
+  }
+
+  get eventos() {
+    return this.auditoriaApi.items;
+  }
+
   readonly modulos = computed(() =>
-    [...new Set(this.data.auditoria().map(a => a.modulo))].sort(),
+    [...new Set(this.eventos().map(a => a.modulo))].sort(),
   );
   readonly usuarios = computed(() =>
-    [...new Set(this.data.auditoria().map(a => a.usuario))].sort(),
+    [...new Set(this.eventos().map(a => a.usuario))].sort(),
   );
   readonly operaciones = computed(() =>
-    [...new Set(this.data.auditoria().map(a => a.operacion))].sort(),
+    [...new Set(this.eventos().map(a => a.operacion))].sort(),
   );
 
   readonly filtered = computed(() => {
     const f = this.filtros();
-    return this.data.auditoria().filter(a => {
+    return this.eventos().filter(a => {
       if (f.fecha && !a.fecha.toLowerCase().includes(f.fecha.toLowerCase())) return false;
       if (f.modulo && a.modulo !== f.modulo) return false;
       if (f.usuario && a.usuario !== f.usuario) return false;
