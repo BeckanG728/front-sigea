@@ -87,19 +87,21 @@
 
 <!-- Editar Aula Modal -->
 <app-modal [visible]="editarVisible" [title]="'Editar aula'" (close)="cerrarEditar()">
-  <form #editarForm="ngForm" (ngSubmit)="guardarEdicion()">
+  <form (ngSubmit)="guardarEdicion()">
     <div class="field">
       <label>Nivel *</label>
-      <select name="codNivel" [(ngModel)]="editarData.codNivel" required>
+      <select (change)="onNivelChangeNativeEditar($event)" required>
         <option value="" disabled>Seleccione</option>
         @for (n of niveles(); track n.id) {
-        <option [value]="n.id">{{ n.nombre }}</option>
+        <option [value]="n.id" [selected]="editarNivel() === n.id">{{ n.nombre }}</option>
         }
       </select>
     </div>
     <div class="field">
       <label>Grado *</label>
-      <select name="codGrado" [(ngModel)]="editarData.codGrado" required>
+      <select name="codGrado"
+              [ngModel]="editarGrado()"
+              (ngModelChange)="editarGrado.set($event)" required>
         <option value="" disabled>Seleccione</option>
         @for (g of gradosFiltradosEditar(); track g.id) {
         <option [value]="g.id">{{ g.nombreGrado }}</option>
@@ -109,11 +111,15 @@
     <div class="field-row">
       <div class="field">
         <label>Sección *</label>
-        <input name="seccion" [(ngModel)]="editarData.seccion" maxlength="2" required />
+        <input name="seccion"
+               [ngModel]="editarSeccion()"
+               (ngModelChange)="editarSeccion.set($event)" maxlength="2" required />
       </div>
       <div class="field">
         <label>Capacidad máxima</label>
-        <input name="capacidadMaxima" type="number" min="1" [(ngModel)]="editarData.capacidadMaxima" required />
+        <input name="capacidadMaxima" type="number" min="1"
+               [ngModel]="editarCapacidad()"
+               (ngModelChange)="editarCapacidad.set($event)" required />
       </div>
     </div>
     @if (editarError) {
@@ -137,19 +143,21 @@
 
 <!-- Nueva Aula Modal -->
 <app-modal [visible]="nuevaAulaVisible" title="Nueva aula" (close)="nuevaAulaVisible = false">
-  <form #nuevaForm="ngForm" (ngSubmit)="guardarNuevaAula()">
+  <form (ngSubmit)="guardarNuevaAula()">
     <div class="field">
       <label>Nivel *</label>
-      <select name="codNivel" [(ngModel)]="nuevaAulaData.codNivel" required>
-        <option value="" disabled>Seleccione</option>
+      <select (change)="onNivelChangeNative($event)" required>
+        <option value="" disabled selected>Seleccione</option>
         @for (n of niveles(); track n.id) {
-        <option [value]="n.id">{{ n.nombre }}</option>
+        <option [value]="n.id" [selected]="nuevoNivel() === n.id">{{ n.nombre }}</option>
         }
       </select>
     </div>
     <div class="field">
       <label>Grado *</label>
-      <select name="codGrado" [(ngModel)]="nuevaAulaData.codGrado" required>
+      <select name="codGrado"
+              [ngModel]="nuevoGrado()"
+              (ngModelChange)="nuevoGrado.set($event)" required>
         <option value="" disabled>Seleccione</option>
         @for (g of gradosFiltrados(); track g.id) {
         <option [value]="g.id">{{ g.nombreGrado }}</option>
@@ -159,11 +167,15 @@
     <div class="field-row">
       <div class="field">
         <label>Sección *</label>
-        <input name="seccion" [(ngModel)]="nuevaAulaData.seccion" maxlength="2" required />
+        <input name="seccion"
+               [ngModel]="nuevaSeccion()"
+               (ngModelChange)="nuevaSeccion.set($event)" maxlength="2" required />
       </div>
       <div class="field">
         <label>Capacidad máxima</label>
-        <input name="capacidadMaxima" type="number" min="1" [(ngModel)]="nuevaAulaData.capacidadMaxima" required />
+        <input name="capacidadMaxima" type="number" min="1"
+               [ngModel]="nuevaCapacidad()"
+               (ngModelChange)="nuevaCapacidad.set($event)" required />
       </div>
     </div>
     @if (nuevaAulaError) {
