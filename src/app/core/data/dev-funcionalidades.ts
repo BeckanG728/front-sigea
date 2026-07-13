@@ -57,7 +57,7 @@ export function getDirectorTree(): FuncionalidadNode[] {
       idFuncionalidad: 100, codigo: 'ACADEMICO', nombre: 'Académico', icon: getIcon('Académico'),
       permisos: readVer,
       hijos: [
-        { idFuncionalidad: 101, codigo: 'PANEL_DIRECTOR', nombre: 'Panel director', ruta: '/director', icon: getIcon('Panel director'), permisos: readVer },
+        { idFuncionalidad: 101, codigo: 'DASHBOARD', nombre: 'Dashboard', ruta: '/director/dashboard', icon: getIcon('Dashboard'), permisos: readVer },
         { idFuncionalidad: 102, codigo: 'AULAS', nombre: 'Aulas', ruta: '/director/aulas', icon: getIcon('Aulas'), permisos: readVer },
         { idFuncionalidad: 103, codigo: 'ALUMNOS', nombre: 'Alumnos', ruta: '/director/alumnos', icon: getIcon('Alumnos'), permisos: readVer },
         { idFuncionalidad: 104, codigo: 'MATRICULA_REGISTRAR', nombre: 'Registrar Matrícula', ruta: '/director/matricula/registrar', icon: getIcon('Registrar Matrícula'), permisos: readVer },

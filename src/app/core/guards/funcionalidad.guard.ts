@@ -15,6 +15,11 @@ export function funcionalidadGuard(ruta: string): CanActivateFn {
     if (auth.tieneFuncionalidad(ruta)) {
       return true;
     }
+    // Evita un bucle infinito de redirecciones si la propia homeRoute
+    // no tiene una funcionalidad asignada (p. ej. permiso no sembrado en backend).
+    if (ruta === auth.homeRoute) {
+      return router.parseUrl('/login');
+    }
     return router.parseUrl(auth.homeRoute);
   };
 }

@@ -48,7 +48,7 @@ export const ICON_MAP: Record<string, string> = {
   'Reporte de Deudas': 'bi bi-cash-stack',
   'Reporte de Caja': 'bi bi-cash-coin',
   'Reporte de Auditoría': 'bi bi-journal-check',
-  'Panel director': 'bi bi-building',
+  'Dashboard': 'bi bi-speedometer2',
 };
 
 export function getIcon(nombre: string): string {

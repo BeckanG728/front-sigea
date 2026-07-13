@@ -18,7 +18,7 @@ export const PERMISO_LABELS: Record<string, string> = {
 
 export const ARBOL_PERMISOS: RamaPermiso[] = [
   {
-    nombre: 'Seguridad', key: 'seguridad', icon: 'bi bi-shield-lock',
+    nombre: 'Seguridad', key: 'seguridad', icon: 'bi bi-shield-lock', codigoBackend: 'SEGURIDAD',
     hijos: [
       { nombre: 'Usuarios', key: 'usuarios', codigoBackend: 'USUARIOS', icon: 'bi bi-people', permisosDisponibles: ['ver', 'crear', 'editar', 'eliminar'] },
       { nombre: 'Roles', key: 'roles', codigoBackend: 'ROLES', icon: 'bi bi-person-badge', permisosDisponibles: ['ver', 'crear', 'editar', 'eliminar'] },
@@ -27,34 +27,30 @@ export const ARBOL_PERMISOS: RamaPermiso[] = [
     ],
   },
   {
-    nombre: 'Académico', key: 'academico', icon: 'bi bi-book',
+    nombre: 'Académico', key: 'academico', icon: 'bi bi-book', codigoBackend: 'ACADEMICO',
     hijos: [
+      { nombre: 'Dashboard', key: 'dashboard', codigoBackend: 'DASHBOARD', icon: 'bi bi-speedometer2', permisosDisponibles: ['ver'] },
       { nombre: 'Aulas', key: 'aulas', codigoBackend: 'AULAS', icon: 'bi bi-door-open', permisosDisponibles: ['ver', 'crear', 'editar', 'eliminar'] },
       { nombre: 'Alumnos', key: 'alumnos', codigoBackend: 'ALUMNOS', icon: 'bi bi-mortarboard', permisosDisponibles: ['ver', 'crear', 'editar', 'eliminar'] },
       { nombre: 'Conceptos', key: 'conceptos', codigoBackend: 'CONCEPTOS', icon: 'bi bi-receipt', permisosDisponibles: ['ver', 'crear', 'editar', 'eliminar'] },
-      {
-        nombre: 'Matrícula', key: 'matricula', icon: 'bi bi-pencil-square',
-        hijos: [
-          { nombre: 'Registrar Matrícula', key: 'registrar-matricula', codigoBackend: 'MATRICULA_REGISTRAR', icon: 'bi bi-file-text', permisosDisponibles: ['ver', 'crear'] },
-        ],
-      },
+      { nombre: 'Registrar Matrícula', key: 'registrar-matricula', codigoBackend: 'MATRICULA_REGISTRAR', icon: 'bi bi-file-text', permisosDisponibles: ['ver', 'crear'] },
     ],
   },
   {
-    nombre: 'Pagos', key: 'pagos', icon: 'bi bi-credit-card',
+    nombre: 'Pagos', key: 'pagos', icon: 'bi bi-credit-card', codigoBackend: 'PAGOS',
     hijos: [
       { nombre: 'Registrar Pago', key: 'registrar-pago', codigoBackend: 'PAGO_REGISTRAR', icon: 'bi bi-cash', permisosDisponibles: ['ver', 'crear'] },
       { nombre: 'Historial de Deudas', key: 'historial-deudas', codigoBackend: 'DEUDA_HISTORIAL', icon: 'bi bi-clock-history', permisosDisponibles: ['ver'] },
     ],
   },
   {
-    nombre: 'Auditoría', key: 'auditoria', icon: 'bi bi-search',
+    nombre: 'Auditoría', key: 'auditoria', icon: 'bi bi-search', codigoBackend: 'AUDITORIA',
     hijos: [
       { nombre: 'Registro de Auditoría', key: 'registro-auditoria', codigoBackend: 'AUDITORIA_REGISTRO', icon: 'bi bi-list-check', permisosDisponibles: ['ver', 'imprimir'] },
     ],
   },
   {
-    nombre: 'Reportes', key: 'reportes', icon: 'bi bi-file-earmark-bar-graph',
+    nombre: 'Reportes', key: 'reportes', icon: 'bi bi-file-earmark-bar-graph', codigoBackend: 'REPORTES',
     hijos: [
       { nombre: 'Reporte de Matrícula', key: 'reporte-matricula', codigoBackend: 'REPORTE_MATRICULA', icon: 'bi bi-file-text', permisosDisponibles: ['ver', 'imprimir'] },
       { nombre: 'Reporte de Vacantes', key: 'reporte-vacantes', codigoBackend: 'REPORTE_VACANTES', icon: 'bi bi-door-open', permisosDisponibles: ['ver', 'imprimir'] },

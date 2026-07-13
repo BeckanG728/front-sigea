@@ -4,7 +4,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { ShellStateService } from '../../../core/services/shell-state.service';
 import { PermisoMap } from '../../../core/models/permiso.model';
 import { ARBOL_PERMISOS, aplanarArbol, obtenerClavesGrupo, obtenerHojas, PERMISO_LABELS } from '../../../core/data/arbol-permisos';
-import type { ItemPlano } from '../../../core/data/arbol-permisos';
+import type { ItemPlano, RamaPermiso } from '../../../core/data/arbol-permisos';
 import { ModalComponent } from '../../../shared/modal/modal.component';
 import { ConfirmDialogComponent } from '../../../shared/confirm-dialog/confirm-dialog.component';
 import { PermisosService } from './permisos.service';
@@ -330,11 +330,34 @@ export class PermisosComponent implements AfterViewInit, OnInit {
     setTimeout(() => this.updateIndeterminate());
   }
 
+  private grupoTieneAlgunPermisoActivo(nodo: RamaPermiso): boolean {
+    if (!nodo.hijos) {
+      const subs = this.permState()[nodo.key];
+      return !!subs && Object.values(subs).some(Boolean);
+    }
+    return nodo.hijos.some(h => this.grupoTieneAlgunPermisoActivo(h));
+  }
+
   applyPermisos(): void {
     const role = this.selectedRole();
     if (!role) return;
     this.loading.set(true);
     const payload: PermisoPorFuncionalidad[] = [];
+
+    for (const grupo of ARBOL_PERMISOS) {
+      if (!grupo.codigoBackend) continue;
+      const activo = this.grupoTieneAlgunPermisoActivo(grupo);
+      payload.push({
+        idFuncionalidad: 0,
+        codigo: grupo.codigoBackend,
+        ver: activo,
+        crear: false,
+        editar: false,
+        eliminar: false,
+        imprimir: false,
+      });
+    }
+
     for (const hoja of obtenerHojas(ARBOL_PERMISOS)) {
       if (hoja.readonly || !hoja.codigoBackend) continue;
       const subs = this.permState()[hoja.key];

@@ -1,21 +1,21 @@
 export interface UsuarioResponse {
   idUsuario: number;
-  usuario: string;
   nombre: string;
-  apellido1: string;
-  dni: string;
-  idRol: number;
+  primerApellido: string;
+  numeroDocumento: string;
   nombreRol: string;
   estado: boolean;
-  dosFactorHabilitado: boolean;
-  fechaRegistro: string;
+}
+
+export interface SimpleResponse {
+  mensaje: string;
+  id?: number;
 }
 
 export interface CrearUsuarioRequest {
   nombre: string;
-  apellido1: string;
-  dni: string;
-  password: string;
+  primerApellido: string;
+  numeroDocumento: string;
   idRol: number;
 }
 
