@@ -43,6 +43,9 @@ export class ShellComponent {
       this.roleBadgeLabel = role.badgeLabel;
       this.currentUser = this.auth.usuario() ?? '';
     }
+    console.log('ROLE:', this.auth.role());
+    console.log('FUNCIONALIDADES:', this.auth.funcionalidades());
+    console.log('MENU ITEMS:', this.auth.getMenuEntries());
   }
 
   logout(): void {

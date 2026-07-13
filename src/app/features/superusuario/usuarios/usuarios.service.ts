@@ -24,6 +24,6 @@ export class UsuariosService {
   }
 
   eliminar(id: number): Observable<SimpleResponse> {
-    return this.http.patch<SimpleResponse>(`${this.API}/api/usuarios/${id}`, {});
+    return this.http.delete<SimpleResponse>(`${this.API}/api/usuarios/${id}`);
   }
 }
