@@ -8,25 +8,11 @@
   <div class="card mt-3">
     <div class="filter-bar">
       <div class="field">
-        <label>Fecha</label>
-        <input type="text" placeholder="Buscar fecha..."
-          [ngModel]="filtros().fecha"
-          (ngModelChange)="filtros.set({...filtros(), fecha: $event}); onFilterChange()" />
-      </div>
-      <div class="field">
         <label>Módulo</label>
         <select [ngModel]="filtros().modulo"
           (ngModelChange)="filtros.set({...filtros(), modulo: $event}); onFilterChange()">
           <option value="">Todos</option>
-          @for (m of modulos(); track m) { <option [value]="m">{{ m }}</option> }
-        </select>
-      </div>
-      <div class="field">
-        <label>Usuario</label>
-        <select [ngModel]="filtros().usuario"
-          (ngModelChange)="filtros.set({...filtros(), usuario: $event}); onFilterChange()">
-          <option value="">Todos</option>
-          @for (u of usuarios(); track u) { <option [value]="u">{{ u }}</option> }
+          @for (m of modulosDisponibles; track m) { <option [value]="m">{{ m }}</option> }
         </select>
       </div>
       <div class="field">
@@ -34,8 +20,20 @@
         <select [ngModel]="filtros().operacion"
           (ngModelChange)="filtros.set({...filtros(), operacion: $event}); onFilterChange()">
           <option value="">Todos</option>
-          @for (o of operaciones(); track o) { <option [value]="o">{{ o }}</option> }
+          @for (o of operacionesDisponibles; track o) { <option [value]="o">{{ o }}</option> }
         </select>
+      </div>
+      <div class="field">
+        <label>Desde</label>
+        <input type="datetime-local"
+          [ngModel]="filtros().desde"
+          (ngModelChange)="filtros.set({...filtros(), desde: $event}); onFilterChange()" />
+      </div>
+      <div class="field">
+        <label>Hasta</label>
+        <input type="datetime-local"
+          [ngModel]="filtros().hasta"
+          (ngModelChange)="filtros.set({...filtros(), hasta: $event}); onFilterChange()" />
       </div>
       <div class="field">
         <label>&nbsp;</label>
@@ -63,7 +61,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (ev of paged(); track ev.n) {
+          @for (ev of eventos(); track ev.n) {
             <tr>
               <td>{{ ev.n }}</td>
               <td>{{ ev.fecha }}</td>
@@ -87,9 +85,9 @@
         <button [disabled]="page() <= 1" (click)="goToPage(page() - 1)">
           <i class="bi bi-chevron-left"></i>
         </button>
-        @for (p of pages(); track p) {
-          @if (p === '…') {
-            <span class="text-muted">…</span>
+        @for (p of pages(); track $index) {
+          @if (p === '...') {
+            <span class="text-muted">...</span>
           } @else {
             <button [class.active]="page() === p" (click)="goToPage(p)">
               {{ p }}
