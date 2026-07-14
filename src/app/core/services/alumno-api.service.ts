@@ -8,6 +8,12 @@ export interface TipoDocumento {
   descripcion: string;
 }
 
+export interface AlumnoBusquedaResponse {
+  id: number;
+  numeroDocumento: string;
+  nombreCompleto: string;
+}
+
 export interface AlumnoRequest {
   codTipoDocumento: number;
   numeroDocumento: string;
@@ -44,6 +50,18 @@ export class AlumnoApiService {
   async crearAlumno(data: AlumnoRequest): Promise<AlumnoResponse> {
     return await lastValueFrom(
       this.http.post<AlumnoResponse>(`${environment.apiUrl}/api/alumnos`, data)
+    );
+  }
+
+  async buscarPorDocumento(numero: string): Promise<AlumnoBusquedaResponse[]> {
+    return await lastValueFrom(
+      this.http.get<AlumnoBusquedaResponse[]>(`${environment.apiUrl}/api/alumnos/documento/${numero}`)
+    );
+  }
+
+  async buscarPorNombres(nombres: string): Promise<AlumnoBusquedaResponse[]> {
+    return await lastValueFrom(
+      this.http.get<AlumnoBusquedaResponse[]>(`${environment.apiUrl}/api/alumnos`, { params: { nombres } })
     );
   }
 }

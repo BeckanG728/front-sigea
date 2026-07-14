@@ -4,7 +4,7 @@
       <button class="btn btn--outline btn--sm" (click)="clonar()"><i class="bi-files"></i> Clonar a 2027</button>
     </div>
 
-    @if (loading) {
+    @if (loading()) {
       <div class="text-muted" style="text-align:center;padding:24px">Cargando...</div>
     } @else if (error) {
       <div class="alert alert--danger">{{ error }}</div>
@@ -13,7 +13,7 @@
         <table class="table">
           <thead><tr><th>#</th><th>Concepto</th><th>Categoría</th><th>Frecuencia</th><th>Monto</th><th>Obligatorio</th><th>Estado</th><th>Acciones</th></tr></thead>
           <tbody>
-            @for (c of conceptos; track c.id) {
+            @for (c of conceptos(); track c.id) {
               <tr [style.opacity]="!c.activo ? '.5' : undefined">
                 <td>{{ c.orden }}</td>
                 <td>{{ c.nombre }}</td>
@@ -92,7 +92,7 @@
       <label>Categoría *</label>
       <select name="codTipoConcepto" [(ngModel)]="formData.codTipoConcepto" required>
         <option value="" disabled>Seleccionar</option>
-        @for (t of tiposConcepto; track t.id) {
+        @for (t of tiposConcepto(); track t.id) {
           <option [value]="t.id">{{ t.nombre }}</option>
         }
       </select>
@@ -120,7 +120,7 @@
     }
     <div class="flex gap-2 mt-3" style="justify-content:flex-end">
       <button type="button" class="btn btn--outline" (click)="cerrarEditar()">Cancelar</button>
-      <button type="submit" class="btn btn--dark" [disabled]="loading"><i class="bi-check-lg"></i> Guardar cambios</button>
+      <button type="submit" class="btn btn--dark" [disabled]="loading()"><i class="bi-check-lg"></i> Guardar cambios</button>
     </div>
   </form>
 </app-modal>
