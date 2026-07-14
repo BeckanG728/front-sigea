@@ -2,28 +2,51 @@
   <div class="filter-bar">
     <div class="field">
       <label>Período</label>
-      <select><option>Enero - Junio 2026</option><option>2025</option></select>
+      <select [ngModel]="periodoSel()" (ngModelChange)="onPeriodoChange($event)">
+        @for (p of periodos(); track $index) {
+          <option [value]="$index">{{ p.etiqueta }}</option>
+        }
+      </select>
     </div>
     <div class="field">
       <label>&nbsp;</label>
-      <button class="btn btn--primary"><i class="bi bi-download"></i> Exportar CSV</button>
+      <button class="btn btn--primary" (click)="exportar()" [disabled]="!ingresos().length">
+        <i class="bi bi-download"></i> Exportar CSV
+      </button>
     </div>
   </div>
 </div>
+
+@if (error()) {
+  <div class="alert alert--danger mt-3">
+    <i class="bi bi-exclamation-triangle alert__icon"></i>
+    <span>{{ error() }}</span>
+  </div>
+}
 
 <div class="split-layout mt-3">
   <div class="card">
     <div class="card__title"><i class="bi bi-cash-coin"></i> Ingresos del período</div>
     <div class="table-wrap">
       <table class="table">
-        <thead><tr><th>Mes</th><th>Concepto</th><th>Cant. pagos</th><th>Total</th></tr></thead>
+        <thead>
+          <tr><th>Mes</th><th>Concepto</th><th>Cant. pagos</th><th>Total</th></tr>
+        </thead>
         <tbody>
-          <tr><td>Enero</td><td>Matrículas</td><td>15</td><td>S/ 3,000</td></tr>
-          <tr><td>Febrero</td><td>Matrículas</td><td>22</td><td>S/ 4,400</td></tr>
-          <tr><td>Marzo</td><td>Cuotas mensuales</td><td>18</td><td>S/ 1,800</td></tr>
-          <tr><td>Abril</td><td>Cuotas mensuales</td><td>12</td><td>S/ 1,200</td></tr>
-          <tr><td>Mayo</td><td>Cuotas mensuales</td><td>10</td><td>S/ 1,000</td></tr>
-          <tr><td>Junio</td><td>Cuotas mensuales</td><td>8</td><td>S/ 800</td></tr>
+          @if (cargando()) {
+            <tr><td colspan="4" class="text-muted">Cargando…</td></tr>
+          } @else if (!ingresos().length) {
+            <tr><td colspan="4" class="text-muted">No hay pagos registrados en este período.</td></tr>
+          } @else {
+            @for (f of ingresos(); track $index) {
+              <tr>
+                <td>{{ f.nombreMes }}</td>
+                <td>{{ f.concepto }}</td>
+                <td>{{ f.cantidadPagos }}</td>
+                <td>S/ {{ f.total | number:'1.0-2' }}</td>
+              </tr>
+            }
+          }
         </tbody>
       </table>
     </div>
@@ -33,15 +56,21 @@
     <div class="card__title">Resumen de caja</div>
     <div style="padding:12px 0;border-bottom:1px solid var(--color-border-soft)">
       <div class="text-muted" style="font-size:12px">Total ingresos</div>
-      <div style="font-size:22px;font-weight:800;color:var(--color-success)">S/ 12,200</div>
+      <div style="font-size:22px;font-weight:800;color:var(--color-success)">
+        S/ {{ totalIngresos() | number:'1.0-2' }}
+      </div>
     </div>
     <div style="padding:12px 0;border-bottom:1px solid var(--color-border-soft)">
       <div class="text-muted" style="font-size:12px">Total egresos</div>
-      <div style="font-size:22px;font-weight:800;color:var(--color-danger)">S/ 0</div>
+      <div style="font-size:22px;font-weight:800;color:var(--color-danger)">
+        S/ {{ totalEgresos() | number:'1.0-2' }}
+      </div>
     </div>
     <div style="padding:12px 0">
       <div class="text-muted" style="font-size:12px">Saldo neto</div>
-      <div style="font-size:26px;font-weight:800">S/ 12,200</div>
+      <div style="font-size:26px;font-weight:800">
+        S/ {{ saldoNeto() | number:'1.0-2' }}
+      </div>
     </div>
     <div class="alert alert--info mt-2">
       <i class="bi bi-info-circle alert__icon"></i>

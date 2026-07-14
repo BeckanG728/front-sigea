@@ -2,43 +2,75 @@
   <div class="filter-bar">
     <div class="field">
       <label>Año</label>
-      <select><option>2026</option><option>2025</option></select>
+      <select [ngModel]="anioSel()" (ngModelChange)="onAnioChange($event)">
+        @for (a of anios(); track a.id) {
+          <option [value]="a.anio">{{ a.anio }}</option>
+        }
+      </select>
     </div>
     <div class="field">
       <label>Estado</label>
-      <select><option>Todos</option><option>Pendiente</option><option>Pagado</option></select>
+      <select [ngModel]="estadoSel()" (ngModelChange)="onEstadoChange($event)">
+        <option value="">Todos</option>
+        <option value="PENDIENTE">Pendiente</option>
+        <option value="BLOQUEADA">Bloqueado</option>
+      </select>
     </div>
     <div class="field">
       <label>&nbsp;</label>
-      <button class="btn btn--primary"><i class="bi bi-download"></i> Exportar CSV</button>
+      <button class="btn btn--primary" (click)="exportar()" [disabled]="!filas().length">
+        <i class="bi bi-download"></i> Exportar CSV
+      </button>
     </div>
   </div>
 </div>
 
 <div class="card mt-3">
-  <div class="card__title"><i class="bi bi-cash-stack"></i> Reporte de Deudas — 2026</div>
+  <div class="card__title">
+    <i class="bi bi-cash-stack"></i> Reporte de Deudas — {{ anioSel() ?? 'Todos los años' }}
+  </div>
+
+  @if (error()) {
+    <div class="alert alert--danger mt-2">
+      <i class="bi bi-exclamation-triangle alert__icon"></i>
+      <span>{{ error() }}</span>
+    </div>
+  }
+
   <div class="table-wrap">
     <table class="table">
-      <thead><tr><th>Alumno</th><th>Documento</th><th>Concepto</th><th>Monto</th><th>Vencimiento</th><th>Días de atraso</th><th>Estado</th></tr></thead>
+      <thead>
+        <tr>
+          <th>Alumno</th><th>Documento</th><th>Concepto</th><th>Monto</th>
+          <th>Vencimiento</th><th>Días de atraso</th><th>Estado</th>
+        </tr>
+      </thead>
       <tbody>
-        <tr>
-          <td>Chinga Ramos, Carlos</td><td>DNI 75412638</td><td>Marzo 2026</td><td>S/ 100</td><td>15/04/2026</td><td style="color:var(--color-danger)">85</td>
-          <td><span class="badge badge--danger"><span>Pendiente</span></span></td>
-        </tr>
-        <tr>
-          <td>Chinga Ramos, Carlos</td><td>DNI 75412638</td><td>Abril 2026</td><td>S/ 100</td><td>15/05/2026</td><td style="color:var(--color-danger)">55</td>
-          <td><span class="badge badge--neutral"><span>Bloqueado</span></span></td>
-        </tr>
-        <tr>
-          <td>López Díaz, Lucía</td><td>DNI 47112233</td><td>Abril 2026</td><td>S/ 100</td><td>15/05/2026</td><td style="color:var(--color-danger)">55</td>
-          <td><span class="badge badge--danger"><span>Pendiente</span></span></td>
-        </tr>
-        <tr>
-          <td>Quispe Meza, Pedro</td><td>DNI 52009871</td><td>Marzo 2026</td><td>S/ 100</td><td>15/04/2026</td><td style="color:var(--color-danger)">85</td>
-          <td><span class="badge badge--danger"><span>Pendiente</span></span></td>
-        </tr>
+        @if (cargando()) {
+          <tr><td colspan="7" class="text-muted">Cargando…</td></tr>
+        } @else if (!filas().length) {
+          <tr><td colspan="7" class="text-muted">No hay deudas para los filtros seleccionados. 🎉</td></tr>
+        } @else {
+          @for (f of filas(); track f.codCuota) {
+            <tr>
+              <td>{{ f.alumno }}</td>
+              <td>{{ f.documento }}</td>
+              <td>{{ f.concepto }}</td>
+              <td>S/ {{ f.monto | number:'1.0-2' }}</td>
+              <td>{{ f.vencimientoTexto }}</td>
+              <td style="color:var(--color-danger)">{{ f.diasAtraso }}</td>
+              <td><span [class]="'badge ' + f.claseBadge"><span>{{ f.estadoTexto }}</span></span></td>
+            </tr>
+          }
+        }
       </tbody>
     </table>
   </div>
-  <p class="note mt-2"><i class="bi bi-info-circle"></i> Total deuda pendiente: <strong style="color:var(--color-danger)">S/ 400</strong> — 3 alumnos morosos.</p>
+
+  <p class="note mt-2">
+    <i class="bi bi-info-circle"></i>
+    Total deuda pendiente:
+    <strong style="color:var(--color-danger)">S/ {{ totalDeuda() | number:'1.0-2' }}</strong>
+    — {{ alumnosMorosos() }} {{ alumnosMorosos() === 1 ? 'alumno moroso' : 'alumnos morosos' }}.
+  </p>
 </div>
