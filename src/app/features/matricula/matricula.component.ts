@@ -55,8 +55,8 @@ export class MatriculaComponent {
   private cargarDatosPorAnio(): void {
     const anio = this.anioActual();
     if (anio) {
-      this.matriculaService.cargarConceptos(anio.id);
-      this.matriculaService.cargarAulas(anio.anio);
+      this.matriculaService.cargarConceptos(anio.anio);
+      this.matriculaService.cargarAulas(anio.id, anio.anio);
     }
   }
 
@@ -172,12 +172,12 @@ export class MatriculaComponent {
   }
 
   async buscarAulas(): Promise<void> {
-    const anio = this.anioActual()?.anio;
-    if (!anio) { this.aulasResultado.set([]); return; }
+    const anioActual = this.anioActual();
+    if (!anioActual) { this.aulasResultado.set([]); return; }
     this.buscandoAulas.set(true);
     try {
       const res = await this.matriculaService.buscarAulas(
-        anio,
+        anioActual.id,
         this.nivelSeleccionado() ?? undefined,
         this.gradoSeleccionado() ?? undefined
       );
@@ -217,17 +217,23 @@ export class MatriculaComponent {
 
     this.matriculaService.preview(this.alumnoID(), this.aulaId(), this.anioSeleccionado()).pipe(
       takeUntilDestroyed(this.destroyRef)
-    ).subscribe(res => {
-      this.loadingPreview.set(false);
-      if (!res.valido) {
-        this.erroresPreview.set(res.errores);
-        return;
+    ).subscribe({
+      next: res => {
+        this.loadingPreview.set(false);
+        if (!res.valido) {
+          this.erroresPreview.set(res.errores);
+          return;
+        }
+        this.previewData.set(res);
+        this.conceptosToggle.set(new Map(
+          res.conceptos.filter(c => c.obligatorio).map(c => [c.id, true] as [number, boolean])
+        ));
+        this.paso.set('confirmation');
+      },
+      error: () => {
+        this.loadingPreview.set(false);
+        this.erroresPreview.set(['Error al conectar con el servidor. Verifique su conexión e intente nuevamente.']);
       }
-      this.previewData.set(res);
-      this.conceptosToggle.set(new Map(
-        res.conceptos.filter(c => c.obligatorio).map(c => [c.id, true] as [number, boolean])
-      ));
-      this.paso.set('confirmation');
     });
   }
 

@@ -78,4 +78,8 @@ export class ConceptosService {
   async cargarAnioActivo(): Promise<{ id: number; anio: number }> {
     return await this.api.cargarAnioActivo();
   }
+
+  async clonar(anioOrigen: number, anioDestino: number): Promise<{ conceptosClonados: number; anioDestino: number }> {
+    return await this.api.clonar({ anioOrigen, anioDestino });
+  }
 }

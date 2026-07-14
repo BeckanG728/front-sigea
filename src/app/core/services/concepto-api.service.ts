@@ -44,6 +44,16 @@ export interface PageResponse<T> {
   last: boolean;
 }
 
+export interface ClonadoRequest {
+  anioOrigen: number;
+  anioDestino: number;
+}
+
+export interface ClonadoResponse {
+  conceptosClonados: number;
+  anioDestino: number;
+}
+
 export interface AnioAcademico {
   id: number;
   anio: number;
@@ -106,6 +116,12 @@ export class ConceptoApiService {
   async cargarAnioActivo(): Promise<AnioAcademico> {
     return await lastValueFrom(
       this.http.get<AnioAcademico>(`${environment.apiUrl}/api/anios-academicos/activo`)
+    );
+  }
+
+  async clonar(data: ClonadoRequest): Promise<ClonadoResponse> {
+    return await lastValueFrom(
+      this.http.post<ClonadoResponse>(`${environment.apiUrl}/api/conceptos/clonar`, data)
     );
   }
 }

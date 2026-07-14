@@ -1,10 +1,14 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { lastValueFrom } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
 import { ModalComponent } from '../../shared/modal/modal.component';
 import { ConfirmDialogComponent as ConfirmModalComponent } from '../../shared/confirm-dialog/confirm-dialog.component';
 import { ConceptosService, Concepto } from './conceptos.service';
 import { ShellStateService } from '../../core/services/shell-state.service';
 import { PermisosService } from '../../core/services/permisos.service';
+import { ReportesApiService } from '../../core/services/reportes-api.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-conceptos',
@@ -16,6 +20,8 @@ export class ConceptosComponent implements OnInit {
   private conceptosService = inject(ConceptosService);
   private shellState = inject(ShellStateService);
   private permisos = inject(PermisosService);
+  private reportesApi = inject(ReportesApiService);
+  private http = inject(HttpClient);
 
   anioAcademicoId = 0;
   anioActual = 2026;
@@ -234,7 +240,42 @@ export class ConceptosComponent implements OnInit {
     }
   }
 
-  clonar(): void {
-    // Disabled functionality
+  async clonar(): Promise<void> {
+    if (!this.anioAcademicoId) {
+      this.error = 'No hay año académico activo para clonar.';
+      return;
+    }
+    this.loading.set(true);
+    this.error = '';
+    try {
+      const anios = await lastValueFrom(
+        this.http.get<{ id: number; anio: number; estado: boolean }[]>(`${environment.apiUrl}/api/anios-academicos`)
+      );
+      const destino = anios.find(a => a.anio === 2027);
+      if (!destino) {
+        this.error = 'El año 2027 no está registrado. Créelo primero en la sección de años académicos.';
+        return;
+      }
+      const res = await this.conceptosService.clonar(this.anioAcademicoId, destino.id);
+      if (res.conceptosClonados === 0) {
+        this.error = `Los conceptos de ${this.anioActual} ya existen en 2027 (no se duplicaron).`;
+      } else {
+        alert(`Se clonaron ${res.conceptosClonados} concepto(s) al año 2027.`);
+      }
+      await this.refresh();
+    } catch (e: any) {
+      this.error = e.error?.message || 'Error al clonar conceptos.';
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  exportar(): void {
+    const cabeceras = ['#', 'Concepto', 'Categoría', 'Frecuencia', 'Monto', 'Obligatorio', 'Estado'];
+    const filas = this.conceptos().map(c => [
+      c.orden, c.nombre, c.tipoConceptoNombre, c.tipo,
+      `S/ ${c.monto}`, c.obligatorio ? 'Sí' : 'No', c.activo ? 'Activo' : 'Eliminado',
+    ]);
+    this.reportesApi.exportarCsv(`conceptos-${this.anioActual}.csv`, cabeceras, filas);
   }
 }

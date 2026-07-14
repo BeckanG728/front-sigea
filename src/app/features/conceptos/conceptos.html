@@ -1,7 +1,10 @@
 <div class="card">
     <div class="flex-between" style="margin-bottom:12px">
       <div class="card__title" style="border:none;margin:0;padding:0"><i class="bi-receipt"></i> Conceptos — año {{ anioActual }}</div>
-      <button class="btn btn--outline btn--sm" (click)="clonar()"><i class="bi-files"></i> Clonar a 2027</button>
+      <div class="flex gap-2">
+        <button class="btn btn--outline btn--sm" (click)="exportar()"><i class="bi-download"></i> Exportar</button>
+        <button class="btn btn--outline btn--sm" (click)="clonar()"><i class="bi-files"></i> Clonar a 2027</button>
+      </div>
     </div>
 
     @if (loading()) {
