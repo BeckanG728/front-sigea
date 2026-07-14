@@ -1,55 +1,121 @@
-<div class="field-row" style="max-width:520px">
-  <div class="field"><label>Año</label><select><option>2026</option></select></div>
-  <div class="field"><label>Alumno</label><input value="Chinga Ramos, Carlos" /></div>
-</div>
-
-<div class="alert alert--warning">
-  <i class="bi bi-exclamation-triangle alert__icon"></i>
-  <span>Deuda pendiente en año 2025 — S/ 100. No se podrá matricular en 2026 hasta regularizar.</span>
-</div>
-
-<div class="split-layout mt-3">
-  <div class="card">
-    <div class="card__title">Cuotas pendientes — Carlos Chinga · 2026</div>
-    <div class="table-wrap">
-      <table class="table">
-        <thead><tr><th>#</th><th>Concepto</th><th>Monto</th><th>Estado</th><th>Acción</th></tr></thead>
-        <tbody>
-          <tr>
-            <td>1</td><td>Matrícula</td><td>S/ 200</td>
-            <td><span class="badge badge--success"><span>Pagado</span></span></td>
-            <td><button class="btn btn--sm btn--outline"><i class="bi bi-file-text"></i> Recibo</button></td>
-          </tr>
-          <tr>
-            <td>2</td><td>Libro</td><td>S/ 50</td>
-            <td><span class="badge badge--success"><span>Pagado</span></span></td>
-            <td><button class="btn btn--sm btn--outline"><i class="bi bi-file-text"></i> Recibo</button></td>
-          </tr>
-          <tr>
-            <td>3</td><td>Marzo</td><td>S/ 100</td>
-            <td><span class="badge badge--danger"><span>Deuda</span></span></td>
-            <td><button class="btn btn--sm btn--primary"><i class="bi bi-cash"></i> Pagar</button></td>
-          </tr>
-          <tr>
-            <td>4</td><td>Abril</td><td>S/ 100</td>
-            <td><span class="badge badge--neutral"><span>Bloqueado</span></span></td>
-            <td><span class="text-muted" style="font-size:12px">requiere cuota #3</span></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    <p class="note mt-2"><i class="bi bi-info-circle"></i> Las cuotas siguientes no podrán pagarse mientras existan cuotas anteriores pendientes.</p>
-  </div>
-
-  <div class="card">
-    <div class="card__title">Resumen</div>
-    <div class="text-muted" style="font-size:12px">Total pagado</div>
-    <div style="font-size:24px;font-weight:800">S/ 250</div>
-    <div class="text-muted mt-2" style="font-size:12px">Pendiente</div>
-    <div style="font-size:20px;font-weight:800;color:var(--color-danger)">S/ 100</div>
-    <div class="alert alert--info mt-3">
-      <i class="bi bi-info-circle alert__icon"></i>
-      <span>Al pagar se genera recibo electrónico con correlativo único.</span>
+<div class="card">
+  <div class="field-row" style="max-width:520px">
+    <div class="field" style="flex:1">
+      <label>Buscar por Nro. Documento</label>
+      <div style="display:flex;gap:8px">
+        <input name="dni" [(ngModel)]="dniBusqueda" placeholder="Ingrese número de documento" (keyup.enter)="buscarAlumno()" />
+        <button class="btn btn--primary" (click)="buscarAlumno()" [disabled]="buscando">
+          <i class="bi bi-search"></i> Buscar
+        </button>
+      </div>
     </div>
   </div>
+
+  @if (buscando) {
+    <div class="text-muted" style="text-align:center;padding:12px">Buscando...</div>
+  }
+
+  @if (error) {
+    <div class="alert alert--danger mt-2">{{ error }}</div>
+  }
+
+  @if (pagoExitoso) {
+    <div class="alert alert--success mt-2"><i class="bi bi-check-circle"></i> {{ pagoExitoso }}</div>
+  }
 </div>
+
+@if (alumnoSeleccionado()) {
+  <div class="card mt-3" style="background:var(--color-surface)">
+    <div style="font-size:14px;font-weight:600">{{ alumnoSeleccionado()!.nombreCompleto }}</div>
+    <div class="text-muted" style="font-size:12px">Doc.: {{ alumnoSeleccionado()!.numeroDocumento }}</div>
+  </div>
+
+  <div class="split-layout mt-3">
+    <div class="card" style="flex:1">
+      <div class="card__title">Cuotas</div>
+      @if (loading()) {
+        <div class="text-muted" style="text-align:center;padding:12px">Cargando...</div>
+      } @else {
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>#</th><th>Concepto</th><th>Monto</th><th>Estado</th><th>Acción</th></tr></thead>
+            <tbody>
+              @for (c of cuotas(); track c.codCuota) {
+                <tr>
+                  <td>{{ c.orden }}</td>
+                  <td>{{ c.concepto }}</td>
+                  <td>S/ {{ c.monto }}</td>
+                  <td>
+                    @if (c.estado === 'PAGADA') {
+                      <span class="badge badge--success"><span>Pagado</span></span>
+                    } @else if (c.estado === 'BLOQUEADA') {
+                      <span class="badge badge--neutral"><span>Bloqueado</span></span>
+                    } @else {
+                      <span class="badge badge--danger"><span>Deuda</span></span>
+                    }
+                  </td>
+                  <td>
+                    @if (c.estado === 'PAGADA') {
+                      <button class="btn btn--sm btn--outline" disabled><i class="bi bi-file-text"></i> Recibo</button>
+                    } @else if (c.bloqueado) {
+                      <span class="text-muted" style="font-size:12px">requiere cuota #{{ c.orden - 1 }}</span>
+                    } @else {
+                      <button class="btn btn--sm btn--primary" (click)="abrirPago(c)">
+                        <i class="bi bi-cash"></i> Pagar
+                      </button>
+                    }
+                  </td>
+                </tr>
+              } @empty {
+                <tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px">Sin cuotas pendientes</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <p class="note mt-2"><i class="bi bi-info-circle"></i> Las cuotas bloqueadas requieren pagar la cuota anterior primero.</p>
+      }
+    </div>
+
+    <div class="card" style="max-width:280px">
+      <div class="card__title">Resumen</div>
+      <div class="text-muted" style="font-size:12px">Total pagado</div>
+      <div style="font-size:24px;font-weight:800">S/ {{ totalPagado() }}</div>
+      <div class="text-muted mt-2" style="font-size:12px">Pendiente</div>
+      <div style="font-size:20px;font-weight:800;color:var(--color-danger)">S/ {{ totalPendiente() }}</div>
+      <div class="alert alert--info mt-3">
+        <i class="bi bi-info-circle alert__icon"></i>
+        <span>Al pagar se genera recibo electrónico con correlativo único.</span>
+      </div>
+    </div>
+  </div>
+}
+
+<app-modal [visible]="pagarVisible" title="Confirmar Pago" (close)="cerrarPago()">
+  @if (pagarCuota) {
+    <div class="field">
+      <label>Concepto</label>
+      <div style="font-weight:600">{{ pagarCuota.concepto }}</div>
+    </div>
+    <div class="field">
+      <label>Monto</label>
+      <div style="font-weight:600">S/ {{ pagarCuota.monto }}</div>
+    </div>
+    <div class="field">
+      <label>Medio de pago</label>
+      <select name="medioPago" [(ngModel)]="medioPago">
+        <option value="EFECTIVO">Efectivo</option>
+        <option value="TRANSFERENCIA">Transferencia</option>
+        <option value="TARJETA">Tarjeta</option>
+      </select>
+    </div>
+    @if (pagoError) {
+      <div class="alert alert--danger mt-2">{{ pagoError }}</div>
+    }
+    <div class="flex gap-2 mt-3" style="justify-content:flex-end">
+      <button type="button" class="btn btn--outline" (click)="cerrarPago()">Cancelar</button>
+      <button type="button" class="btn btn--dark" (click)="confirmarPago()" [disabled]="pagando">
+        <i class="bi bi-check-lg"></i> {{ pagando ? 'Procesando...' : 'Confirmar Pago' }}
+      </button>
+    </div>
+  }
+</app-modal>

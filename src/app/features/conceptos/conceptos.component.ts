@@ -19,7 +19,7 @@ export class ConceptosComponent implements OnInit {
 
   anioAcademicoId = 0;
   anioActual = 2026;
-  loading = false;
+  readonly loading = signal(false);
   error = '';
   readonly page = signal(1);
   readonly pages = signal<(number | string)[]>([]);
@@ -30,6 +30,7 @@ export class ConceptosComponent implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
+    this.loading.set(true);
     try {
       const anio = await this.conceptosService.cargarAnioActivo();
       this.anioAcademicoId = anio.id;
@@ -62,21 +63,9 @@ export class ConceptosComponent implements OnInit {
     obligatorio: true,
   };
 
-  get conceptos(): Concepto[] {
-    return this.conceptosService.conceptos();
-  }
-
-  get tiposConcepto() {
-    return this.conceptosService.tiposConcepto();
-  }
-
-  get totalPages() {
-    return this.conceptosService.totalPages;
-  }
-
-  get currentPage() {
-    return this.conceptosService.currentPage;
-  }
+  conceptos = this.conceptosService.conceptos;
+  tiposConcepto = this.conceptosService.tiposConcepto;
+  totalPages = this.conceptosService.totalPages;
 
   get puedeEditar(): boolean {
     return this.permisos.puede('conceptos', 'editar');
@@ -105,7 +94,7 @@ export class ConceptosComponent implements OnInit {
   }
 
   async refresh(): Promise<void> {
-    this.loading = true;
+    this.loading.set(true);
     this.error = '';
     try {
       await this.conceptosService.listar(this.anioAcademicoId || undefined, this.page() - 1);
@@ -114,7 +103,7 @@ export class ConceptosComponent implements OnInit {
       this.error = 'Error al cargar conceptos';
       console.error(e);
     } finally {
-      this.loading = false;
+      this.loading.set(false);
     }
   }
 
@@ -131,7 +120,7 @@ export class ConceptosComponent implements OnInit {
     this.editarTitulo = 'Editar concepto';
     this.formData = {
       nombreConcepto: c.nombre,
-      codTipoConcepto: this.tiposConcepto.find(t => t.nombre === c.tipoConceptoNombre)?.id ?? 0,
+      codTipoConcepto: this.tiposConcepto().find(t => t.nombre === c.tipoConceptoNombre)?.id ?? 0,
       tipo: c.tipo,
       monto: c.monto,
       obligatorio: c.obligatorio,
@@ -144,7 +133,7 @@ export class ConceptosComponent implements OnInit {
     this.editarRef = undefined;
     this.esNuevo = true;
     this.editarTitulo = 'Nuevo concepto';
-    const primerTipo = this.tiposConcepto[0];
+    const primerTipo = this.tiposConcepto()[0];
     this.formData = {
       nombreConcepto: '',
       codTipoConcepto: primerTipo?.id ?? 0,
@@ -176,7 +165,7 @@ export class ConceptosComponent implements OnInit {
       return;
     }
 
-    this.loading = true;
+    this.loading.set(true);
     this.editarError = '';
     try {
       if (this.esNuevo) {
@@ -210,7 +199,7 @@ export class ConceptosComponent implements OnInit {
     } catch (e: any) {
       this.editarError = e.error?.message || 'Error al guardar el concepto.';
     } finally {
-      this.loading = false;
+      this.loading.set(false);
     }
   }
 
@@ -226,7 +215,7 @@ export class ConceptosComponent implements OnInit {
     const ref = this.eliminarRef;
     if (!ref) return;
 
-    this.loading = true;
+    this.loading.set(true);
     try {
       if (ref.activo) {
         await this.conceptosService.eliminar(ref.id);
@@ -235,7 +224,7 @@ export class ConceptosComponent implements OnInit {
     } catch (e) {
       this.error = 'Error al eliminar el concepto.';
     } finally {
-      this.loading = false;
+      this.loading.set(false);
       this.confirmarEliminarVisible = false;
       this.eliminarRef = undefined;
     }
