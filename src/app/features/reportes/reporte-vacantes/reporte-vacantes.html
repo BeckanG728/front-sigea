@@ -2,39 +2,67 @@
   <div class="filter-bar">
     <div class="field">
       <label>Año académico</label>
-      <select><option>2026</option><option>2025</option></select>
+      <select [ngModel]="anioSel()" (ngModelChange)="onAnioChange($event)">
+        @for (a of anios(); track a.id) {
+          <option [value]="a.id">{{ a.anio }}</option>
+        }
+      </select>
     </div>
     <div class="field">
       <label>&nbsp;</label>
-      <button class="btn btn--primary"><i class="bi bi-download"></i> Exportar CSV</button>
+      <button class="btn btn--primary" (click)="exportar()" [disabled]="!filas().length">
+        <i class="bi bi-download"></i> Exportar CSV
+      </button>
     </div>
   </div>
 </div>
 
 <div class="card mt-3">
-  <div class="card__title"><i class="bi bi-door-open"></i> Vacantes disponibles — 2026</div>
+  <div class="card__title">
+    <i class="bi bi-door-open"></i> Vacantes disponibles — {{ anioLabel() }}
+  </div>
+
+  @if (error()) {
+    <div class="alert alert--danger mt-2">
+      <i class="bi bi-exclamation-triangle alert__icon"></i>
+      <span>{{ error() }}</span>
+    </div>
+  }
+
   <div class="table-wrap">
     <table class="table">
-      <thead><tr><th>Aula</th><th>Nivel</th><th>Grado</th><th>Sección</th><th>Ocupados</th><th>Cupo</th><th>Vacantes</th><th>Estado</th></tr></thead>
+      <thead>
+        <tr>
+          <th>Aula</th><th>Nivel</th><th>Grado</th><th>Sección</th>
+          <th>Ocupados</th><th>Cupo</th><th>Vacantes</th><th>Estado</th>
+        </tr>
+      </thead>
       <tbody>
-        <tr>
-          <td>1</td><td>Inicial</td><td>3 años</td><td>A</td><td>20</td><td>25</td><td style="font-weight:800;color:var(--color-success)">5</td>
-          <td><span class="badge badge--success"><span>Disponible</span></span></td>
-        </tr>
-        <tr>
-          <td>2</td><td>Inicial</td><td>3 años</td><td>B</td><td>18</td><td>25</td><td style="font-weight:800;color:var(--color-success)">7</td>
-          <td><span class="badge badge--success"><span>Disponible</span></span></td>
-        </tr>
-        <tr>
-          <td>3</td><td>Primaria</td><td>1°</td><td>A</td><td>30</td><td>35</td><td style="font-weight:800;color:var(--color-warning)">5</td>
-          <td><span class="badge badge--warning"><span>Casi llena</span></span></td>
-        </tr>
-        <tr>
-          <td>4</td><td>Secundaria</td><td>1°</td><td>A</td><td>35</td><td>35</td><td style="font-weight:800;color:var(--color-danger)">0</td>
-          <td><span class="badge badge--danger"><span>Llena</span></span></td>
-        </tr>
+        @if (cargando()) {
+          <tr><td colspan="8" class="text-muted">Cargando…</td></tr>
+        } @else if (!filas().length) {
+          <tr><td colspan="8" class="text-muted">Sin aulas registradas para el año seleccionado.</td></tr>
+        } @else {
+          @for (f of filas(); track f.aula) {
+            <tr>
+              <td>{{ f.aula }}</td>
+              <td>{{ f.nivel }}</td>
+              <td>{{ f.grado }}</td>
+              <td>{{ f.seccion }}</td>
+              <td>{{ f.ocupados }}</td>
+              <td>{{ f.cupo }}</td>
+              <td [style.color]="f.claseVacantes" style="font-weight:800">{{ f.vacantes }}</td>
+              <td><span [class]="'badge ' + f.claseBadge"><span>{{ f.estado }}</span></span></td>
+            </tr>
+          }
+        }
       </tbody>
     </table>
   </div>
-  <p class="note mt-2"><i class="bi bi-info-circle"></i> Total vacantes: <strong>17</strong>. Se recomienda abrir nuevas secciones si la demanda supera el 90% de ocupación.</p>
+
+  <p class="note mt-2">
+    <i class="bi bi-info-circle"></i>
+    Total vacantes: <strong>{{ totalVacantes() | number }}</strong>.
+    Se recomienda abrir nuevas secciones si la demanda supera el 90% de ocupación.
+  </p>
 </div>
