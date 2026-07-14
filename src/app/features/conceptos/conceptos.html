@@ -1,54 +1,84 @@
 <div class="card">
     <div class="flex-between" style="margin-bottom:12px">
-      <div class="card__title" style="border:none;margin:0;padding:0"><i class="bi-receipt"></i> Conceptos — año 2026</div>
+      <div class="card__title" style="border:none;margin:0;padding:0"><i class="bi-receipt"></i> Conceptos — año {{ anioActual }}</div>
       <button class="btn btn--outline btn--sm" (click)="clonar()"><i class="bi-files"></i> Clonar a 2027</button>
     </div>
-    <div class="table-wrap">
-      <table class="table">
-        <thead><tr><th>#</th><th>Concepto</th><th>Tipo</th><th>Monto</th><th>Orden cobro</th><th>Obligatorio</th><th>Estado</th><th>Acciones</th></tr></thead>
-        <tbody>
-          @for (c of conceptosVisibles; track c.orden) {
-            <tr [style.opacity]="!c.activo ? '.5' : undefined">
-              <td>{{ c.orden }}</td>
-              <td>{{ c.nombre }}</td>
-              <td>{{ c.tipo }}</td>
-              <td>S/ {{ c.monto }}</td>
-              <td>{{ c.orden }}</td>
-              <td>
-                @if (c.obligatorio) {
-                  <span class="badge badge--success"><span>sí</span></span>
-                } @else {
-                  <span class="badge badge--danger"><span>no</span></span>
-                }
-              </td>
-              <td>
-                @if (!c.activo) {
-                  <span class="badge badge--neutral"><span>eliminado</span></span>
-                } @else {
-                  <span class="badge badge--success"><span>activo</span></span>
-                }
-              </td>
-              <td>
-                @if (puedeEditar && c.activo) {
-                  <button type="button" class="btn btn--icon btn--outline btn--sm" (click)="editarConcepto(c)" title="Editar"><i class="bi-pencil" style="font-size:14px"></i></button>
-                }
-                @if (puedeEliminar) {
-                  <button type="button" class="btn btn--icon btn--outline btn--sm" (click)="eliminarConcepto(c)" [title]="c.activo ? 'Eliminar' : 'Restaurar'">
-                    @if (c.activo) {
-                      <i class="bi-trash" style="font-size:14px"></i>
-                    } @else {
-                      <i class="bi-arrow-counterclockwise" style="font-size:14px"></i>
-                    }
-                  </button>
-                }
-              </td>
-            </tr>
+
+    @if (loading) {
+      <div class="text-muted" style="text-align:center;padding:24px">Cargando...</div>
+    } @else if (error) {
+      <div class="alert alert--danger">{{ error }}</div>
+    } @else {
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>#</th><th>Concepto</th><th>Categoría</th><th>Frecuencia</th><th>Monto</th><th>Obligatorio</th><th>Estado</th><th>Acciones</th></tr></thead>
+          <tbody>
+            @for (c of conceptos; track c.id) {
+              <tr [style.opacity]="!c.activo ? '.5' : undefined">
+                <td>{{ c.orden }}</td>
+                <td>{{ c.nombre }}</td>
+                <td>{{ c.tipoConceptoNombre }}</td>
+                <td>{{ c.tipo }}</td>
+                <td>S/ {{ c.monto }}</td>
+                <td>
+                  @if (c.obligatorio) {
+                    <span class="badge badge--success"><span>sí</span></span>
+                  } @else {
+                    <span class="badge badge--danger"><span>no</span></span>
+                  }
+                </td>
+                <td>
+                  @if (!c.activo) {
+                    <span class="badge badge--neutral"><span>eliminado</span></span>
+                  } @else {
+                    <span class="badge badge--success"><span>activo</span></span>
+                  }
+                </td>
+                <td>
+                  @if (puedeEditar && c.activo) {
+                    <button type="button" class="btn btn--icon btn--outline btn--sm" (click)="editarConcepto(c)" title="Editar"><i class="bi-pencil" style="font-size:14px"></i></button>
+                  }
+                  @if (puedeEliminar) {
+                    <button type="button" class="btn btn--icon btn--outline btn--sm" (click)="eliminarConcepto(c)" [title]="c.activo ? 'Eliminar' : 'Restaurar'">
+                      @if (c.activo) {
+                        <i class="bi-trash" style="font-size:14px"></i>
+                      } @else {
+                        <i class="bi-arrow-counterclockwise" style="font-size:14px"></i>
+                      }
+                    </button>
+                  }
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="8" class="text-muted" style="text-align:center;padding:24px">No hay conceptos registrados para este año</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      @if (totalPages() > 1) {
+        <div class="pagination">
+          <button [disabled]="page() <= 1" (click)="goToPage(page() - 1)">
+            <i class="bi bi-chevron-left"></i>
+          </button>
+          @for (p of pages(); track $index) {
+            @if (p === '...') {
+              <span class="text-muted">...</span>
+            } @else {
+              <button [class.active]="page() === p" (click)="goToPage(p)">
+                {{ p }}
+              </button>
+            }
           }
-        </tbody>
-      </table>
-    </div>
-    <button class="btn btn--outline mt-3" (click)="nuevoConcepto()">+ Nuevo concepto</button>
-    <p class="note mt-2"><i class="bi-info-circle"></i> El orden define la secuencia de cobro — no se habilitará una cuota sin pagar la anterior</p>
+          <button [disabled]="page() >= totalPages()" (click)="goToPage(page() + 1)">
+            <i class="bi bi-chevron-right"></i>
+          </button>
+        </div>
+      }
+
+      <button class="btn btn--outline mt-3" (click)="nuevoConcepto()">+ Nuevo concepto</button>
+      <p class="note mt-2"><i class="bi-info-circle"></i> El orden define la secuencia de cobro — no se habilitará una cuota sin pagar la anterior</p>
+    }
   </div>
 
 <!-- Editar / Nuevo Concepto Modal -->
@@ -56,15 +86,24 @@
   <form #f="ngForm" (ngSubmit)="guardarConcepto()">
     <div class="field">
       <label>Nombre *</label>
-      <input name="nombre" [(ngModel)]="formData.nombre" required />
+      <input name="nombreConcepto" [(ngModel)]="formData.nombreConcepto" required />
+    </div>
+    <div class="field">
+      <label>Categoría *</label>
+      <select name="codTipoConcepto" [(ngModel)]="formData.codTipoConcepto" required>
+        <option value="" disabled>Seleccionar</option>
+        @for (t of tiposConcepto; track t.id) {
+          <option [value]="t.id">{{ t.nombre }}</option>
+        }
+      </select>
     </div>
     <div class="field-row">
       <div class="field">
-        <label>Tipo</label>
+        <label>Frecuencia</label>
         <select name="tipo" [(ngModel)]="formData.tipo">
-          <option value="Fijo">Fijo</option>
-          <option value="Mensual">Mensual</option>
-          <option value="Opcional">Opcional</option>
+          <option value="FIJO">Fijo</option>
+          <option value="MENSUAL">Mensual</option>
+          <option value="OPCIONAL">Opcional</option>
         </select>
       </div>
       <div class="field">
@@ -81,7 +120,7 @@
     }
     <div class="flex gap-2 mt-3" style="justify-content:flex-end">
       <button type="button" class="btn btn--outline" (click)="cerrarEditar()">Cancelar</button>
-      <button type="submit" class="btn btn--dark"><i class="bi-check-lg"></i> Guardar cambios</button>
+      <button type="submit" class="btn btn--dark" [disabled]="loading"><i class="bi-check-lg"></i> Guardar cambios</button>
     </div>
   </form>
 </app-modal>
