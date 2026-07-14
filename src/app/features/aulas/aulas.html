@@ -2,12 +2,14 @@
   <div class="flex-between mb-2" style="margin-bottom:12px">
     <div class="card__title" style="border:none;margin:0;padding:0"><i class="bi-door-open"></i> Aulas</div>
     <div class="flex gap-2">
-        <span class="field" style="border:none;padding:8px;font-weight:600">
-          <i class="bi-calendar"></i> Año activo: {{ anioActivo()?.anio ?? '—' }}
-        </span>
-      <button class="btn btn--primary" (click)="abrirNuevaAula()" [disabled]="loading()">
+      <span class="field" style="border:none;padding:8px;font-weight:600">
+        <i class="bi-calendar"></i> Año activo: {{ anioActivo()?.anio ?? '—' }}
+      </span>
+      @if (puedeCrear) {
+        <button class="btn btn--primary" (click)="abrirNuevaAula()" [disabled]="loading()">
         + Nueva aula
       </button>
+      }
     </div>
   </div>
 </div>
@@ -17,42 +19,53 @@
     <div class="card__title">Listado de aulas</div>
     <div class="table-wrap">
       <table class="table">
-        <thead><tr><th>Nivel</th><th>Grado</th><th>Sec.</th><th>Cupo</th><th>Estado</th><th>Acciones</th></tr></thead>
+        <thead>
+          <tr>
+            <th>Nivel</th>
+            <th>Grado</th>
+            <th>Sec.</th>
+            <th>Cupo</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
         <tbody>
-        @for (a of aulas(); track a.id) {
-        <tr (click)="seleccionarAula(a.id)"
-            [class.row--full]="a.matriculados >= a.capacidadMaxima && a.estado"
-            [class.row--selected]="selectedId() === a.id"
-            [style.opacity]="!a.estado ? '.5' : undefined">
-          <td>{{ a.nivel }}</td>
-          <td>{{ a.grado }}</td>
-          <td>{{ a.seccion }}</td>
-          <td>{{ a.matriculados }}/{{ a.capacidadMaxima }}</td>
-          <td>
-            @if (!a.estado) {
-            <span class="badge badge--neutral"><span>eliminado</span></span>
-            } @else {
-            @if (a.matriculados >= a.capacidadMaxima) {
-            <span class="badge badge--danger"><span>llena</span></span>
-            } @else if ((a.matriculados / a.capacidadMaxima) >= 0.85) {
-            <span class="badge badge--warning"><span>casi llena</span></span>
-            } @else {
-            <span class="badge badge--success"><span>disponible</span></span>
-            }
-            }
-          </td>
-          <td>
-            @if (puedeEditar && a.estado) {
-            <button type="button" class="btn btn--icon btn--outline btn--sm" (click)="editarAula($event, a)" title="Editar"><i class="bi-pencil" style="font-size:14px"></i></button>
-            }
-            @if (puedeEliminar) {
-            <button type="button" class="btn btn--icon btn--outline btn--sm" (click)="eliminarAula($event, a)" title="Eliminar"><i class="bi-trash" style="font-size:14px"></i></button>
-            }
-          </td>
-        </tr>
-        } @empty {
-        <tr><td colspan="6" class="text-muted" style="text-align:center;padding:24px">No hay aulas registradas</td></tr>
-        }
+          @for (a of aulas(); track a.id) {
+          <tr (click)="seleccionarAula(a.id)" [class.row--full]="a.matriculados >= a.capacidadMaxima && a.estado"
+            [class.row--selected]="selectedId() === a.id" [style.opacity]="!a.estado ? '.5' : undefined">
+            <td>{{ a.nivel }}</td>
+            <td>{{ a.grado }}</td>
+            <td>{{ a.seccion }}</td>
+            <td>{{ a.matriculados }}/{{ a.capacidadMaxima }}</td>
+            <td>
+              @if (!a.estado) {
+              <span class="badge badge--neutral"><span>eliminado</span></span>
+              } @else {
+              @if (a.matriculados >= a.capacidadMaxima) {
+              <span class="badge badge--danger"><span>llena</span></span>
+              } @else if ((a.matriculados / a.capacidadMaxima) >= 0.85) {
+              <span class="badge badge--warning"><span>casi llena</span></span>
+              } @else {
+              <span class="badge badge--success"><span>disponible</span></span>
+              }
+              }
+            </td>
+            <td>
+              @if (puedeEditar && a.estado) {
+              <button type="button" class="btn btn--icon btn--outline btn--sm" (click)="editarAula($event, a)"
+                title="Editar"><i class="bi-pencil" style="font-size:14px"></i></button>
+              }
+              @if (puedeEliminar) {
+              <button type="button" class="btn btn--icon btn--outline btn--sm" (click)="eliminarAula($event, a)"
+                title="Eliminar"><i class="bi-trash" style="font-size:14px"></i></button>
+              }
+            </td>
+          </tr>
+          } @empty {
+          <tr>
+            <td colspan="6" class="text-muted" style="text-align:center;padding:24px">No hay aulas registradas</td>
+          </tr>
+          }
         </tbody>
       </table>
     </div>
@@ -60,24 +73,33 @@
 
   <div class="card">
     @if (aulaSeleccionada) {
-    <div class="card__title">{{ aulaSeleccionada.nivel }} {{ aulaSeleccionada.grado }} {{ aulaSeleccionada.seccion }} — alumnos</div>
+    <div class="card__title">{{ aulaSeleccionada.nivel }} {{ aulaSeleccionada.grado }} {{ aulaSeleccionada.seccion }} —
+      alumnos</div>
     <div style="font-size:20px;font-weight:800"
-         [style.color]="aulaSeleccionada.matriculados >= aulaSeleccionada.capacidadMaxima ? 'var(--color-danger)' : 'var(--color-text)'">
+      [style.color]="aulaSeleccionada.matriculados >= aulaSeleccionada.capacidadMaxima ? 'var(--color-danger)' : 'var(--color-text)'">
       {{ aulaSeleccionada.matriculados }}/{{ aulaSeleccionada.capacidadMaxima }}
     </div>
     <div class="table-wrap mt-2">
       <table class="table">
-        <thead><tr><th>Código</th><th>Apellidos y nombres</th><th>F. Matrícula</th></tr></thead>
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Apellidos y nombres</th>
+            <th>F. Matrícula</th>
+          </tr>
+        </thead>
         <tbody>
-        @for (al of alumnosAula(); track al.codigo) {
-        <tr>
-          <td>{{ al.codigo }}</td>
-          <td>{{ al.nombreCompleto }}</td>
-          <td>{{ al.fechaMatricula }}</td>
-        </tr>
-        } @empty {
-        <tr><td colspan="3" class="text-muted" style="text-align:center;padding:16px">Sin alumnos matriculados</td></tr>
-        }
+          @for (al of alumnosAula(); track al.codigo) {
+          <tr>
+            <td>{{ al.codigo }}</td>
+            <td>{{ al.nombreCompleto }}</td>
+            <td>{{ al.fechaMatricula }}</td>
+          </tr>
+          } @empty {
+          <tr>
+            <td colspan="3" class="text-muted" style="text-align:center;padding:16px">Sin alumnos matriculados</td>
+          </tr>
+          }
         </tbody>
       </table>
     </div>
@@ -99,9 +121,7 @@
     </div>
     <div class="field">
       <label>Grado *</label>
-      <select name="codGrado"
-              [ngModel]="editarGrado()"
-              (ngModelChange)="editarGrado.set($event)" required>
+      <select name="codGrado" [ngModel]="editarGrado()" (ngModelChange)="editarGrado.set($event)" required>
         <option value="" disabled>Seleccione</option>
         @for (g of gradosFiltradosEditar(); track g.id) {
         <option [value]="g.id">{{ g.nombreGrado }}</option>
@@ -111,35 +131,30 @@
     <div class="field-row">
       <div class="field">
         <label>Sección *</label>
-        <input name="seccion"
-               [ngModel]="editarSeccion()"
-               (ngModelChange)="editarSeccion.set($event)" maxlength="2" required />
+        <input name="seccion" [ngModel]="editarSeccion()" (ngModelChange)="editarSeccion.set($event)" maxlength="2"
+          required />
       </div>
       <div class="field">
         <label>Capacidad máxima</label>
-        <input name="capacidadMaxima" type="number" min="1"
-               [ngModel]="editarCapacidad()"
-               (ngModelChange)="editarCapacidad.set($event)" required />
+        <input name="capacidadMaxima" type="number" min="1" [ngModel]="editarCapacidad()"
+          (ngModelChange)="editarCapacidad.set($event)" required />
       </div>
     </div>
     @if (editarError) {
-    <div class="alert alert--danger mt-2"><i class="bi-exclamation-triangle alert__icon"></i><span>{{ editarError }}</span></div>
+    <div class="alert alert--danger mt-2"><i class="bi-exclamation-triangle alert__icon"></i><span>{{ editarError
+        }}</span></div>
     }
     <div class="flex gap-2 mt-3" style="justify-content:flex-end">
       <button type="button" class="btn btn--outline" (click)="cerrarEditar()">Cancelar</button>
-      <button type="submit" class="btn btn--dark" [disabled]="loading()"><i class="bi-check-lg"></i> Guardar cambios</button>
+      <button type="submit" class="btn btn--dark" [disabled]="loading()"><i class="bi-check-lg"></i> Guardar
+        cambios</button>
     </div>
   </form>
 </app-modal>
 
 <!-- Confirmar eliminación -->
-<app-confirm-modal [visible]="confirmarEliminarVisible"
-                   [title]="'Confirmar'"
-                   [message]="confirmarMessage"
-                   confirmText="Eliminar"
-                   variant="danger"
-                   (confirm)="confirmarEliminar()"
-                   (cancel)="confirmarEliminarVisible = false" />
+<app-confirm-modal [visible]="confirmarEliminarVisible" [title]="'Confirmar'" [message]="confirmarMessage"
+  confirmText="Eliminar" variant="danger" (confirm)="confirmarEliminar()" (cancel)="confirmarEliminarVisible = false" />
 
 <!-- Nueva Aula Modal -->
 <app-modal [visible]="nuevaAulaVisible" title="Nueva aula" (close)="nuevaAulaVisible = false">
@@ -155,9 +170,7 @@
     </div>
     <div class="field">
       <label>Grado *</label>
-      <select name="codGrado"
-              [ngModel]="nuevoGrado()"
-              (ngModelChange)="nuevoGrado.set($event)" required>
+      <select name="codGrado" [ngModel]="nuevoGrado()" (ngModelChange)="nuevoGrado.set($event)" required>
         <option value="" disabled>Seleccione</option>
         @for (g of gradosFiltrados(); track g.id) {
         <option [value]="g.id">{{ g.nombreGrado }}</option>
@@ -167,19 +180,18 @@
     <div class="field-row">
       <div class="field">
         <label>Sección *</label>
-        <input name="seccion"
-               [ngModel]="nuevaSeccion()"
-               (ngModelChange)="nuevaSeccion.set($event)" maxlength="2" required />
+        <input name="seccion" [ngModel]="nuevaSeccion()" (ngModelChange)="nuevaSeccion.set($event)" maxlength="2"
+          required />
       </div>
       <div class="field">
         <label>Capacidad máxima</label>
-        <input name="capacidadMaxima" type="number" min="1"
-               [ngModel]="nuevaCapacidad()"
-               (ngModelChange)="nuevaCapacidad.set($event)" required />
+        <input name="capacidadMaxima" type="number" min="1" [ngModel]="nuevaCapacidad()"
+          (ngModelChange)="nuevaCapacidad.set($event)" required />
       </div>
     </div>
     @if (nuevaAulaError) {
-    <div class="alert alert--danger mt-2"><i class="bi-exclamation-triangle alert__icon"></i><span>{{ nuevaAulaError }}</span></div>
+    <div class="alert alert--danger mt-2"><i class="bi-exclamation-triangle alert__icon"></i><span>{{ nuevaAulaError
+        }}</span></div>
     }
     <div class="flex gap-2 mt-3" style="justify-content:flex-end">
       <button type="button" class="btn btn--outline" (click)="nuevaAulaVisible = false">Cancelar</button>

@@ -80,6 +80,10 @@ export class AulasComponent implements OnInit {
     return this.permisos.puede('aulas', 'eliminar');
   }
 
+  get puedeCrear(): boolean {
+    return this.permisos.puede('aulas','crear')
+  }
+
   async seleccionarAula(id: number): Promise<void> {
     this.selectedId.set(id);
     await this.aulaApi.cargarAlumnosAula(id);

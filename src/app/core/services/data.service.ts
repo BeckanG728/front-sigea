@@ -12,6 +12,26 @@ export interface Usuario {
   secreto2FA: string | null;
 }
 
+export interface Alumno {
+  id: number;
+  documento: string;
+  paterno: string;
+  materno: string;
+  nombre: string;
+  estado: boolean;
+}
+
+export interface ObligacionPago {
+  id: number;
+  conceptoId: number;
+  nombreConcepto: string;
+  monto: number;
+  estado: string;
+  fechaVencimiento: string;
+  ordenPago: number;
+  saldoPendiente: number;
+}
+
 export interface Aula {
   cod: number;
   nivel: string;
@@ -19,7 +39,8 @@ export interface Aula {
   seccion: string;
   cupo: number;
   max: number;
-  estado: string;
+  estado: boolean;
+  periodo: number;
 }
 
 export interface AlumnoAula {
@@ -27,14 +48,6 @@ export interface AlumnoAula {
   nombre: string;
   estado: string;
   registradoPor: string;
-}
-
-export interface Concepto {
-  orden: number;
-  nombre: string;
-  tipo: string;
-  monto: number;
-  obligatorio: boolean;
 }
 
 export interface Cuota {
@@ -59,6 +72,16 @@ export interface MatriculaReciente {
   fecha: string;
   estado: string;
   registradoPor: string;
+}
+
+export interface MatriculaRegistrada {
+  id: number;
+  alumnoId: number;
+  aulaId: number;
+  anioId: number;
+  fecha: string;
+  estado: string;
+  usuarioId: number;
 }
 
 export interface AuditoriaEvento {
@@ -106,11 +129,11 @@ export class DataService {
   readonly usuarios = signal<Usuario[]>([]);
 
   readonly aulas = signal<Aula[]>([
-    { cod: 1, nivel: 'Inicial', grado: '3 años', seccion: 'A', cupo: 20, max: 25, estado: 'activo' },
-    { cod: 2, nivel: 'Inicial', grado: '3 años', seccion: 'B', cupo: 18, max: 25, estado: 'activo' },
-    { cod: 3, nivel: 'Primaria', grado: '1°', seccion: 'A', cupo: 30, max: 35, estado: 'activo' },
-    { cod: 4, nivel: 'Secundaria', grado: '1°', seccion: 'A', cupo: 35, max: 35, estado: 'activo' },
-    { cod: 5, nivel: 'Secundaria', grado: '2°', seccion: 'A', cupo: 28, max: 28, estado: 'eliminado' },
+    { cod: 1, nivel: 'Inicial', grado: '3 años', seccion: 'A', cupo: 20, max: 25, estado: true, periodo: 2026 },
+    { cod: 2, nivel: 'Inicial', grado: '3 años', seccion: 'B', cupo: 18, max: 25, estado: true, periodo: 2026 },
+    { cod: 3, nivel: 'Primaria', grado: '1°', seccion: 'A', cupo: 30, max: 35, estado: true, periodo: 2026 },
+    { cod: 4, nivel: 'Secundaria', grado: '1°', seccion: 'A', cupo: 35, max: 35, estado: true, periodo: 2026 },
+    { cod: 5, nivel: 'Secundaria', grado: '2°', seccion: 'A', cupo: 28, max: 28, estado: false, periodo: 2026 },
   ]);
 
   readonly alumnosAula4 = signal<AlumnoAula[]>([
@@ -118,14 +141,6 @@ export class DataService {
     { matricula: '002', nombre: 'López Díaz, Lucía', estado: 'activa', registradoPor: 'sec01' },
     { matricula: '003', nombre: 'Quispe Meza, Pedro', estado: 'pendiente', registradoPor: 'sec01' },
     { matricula: '004', nombre: 'Ramos Cruz, Ana', estado: 'trasladada', registradoPor: 'sec01' },
-  ]);
-
-  readonly conceptos2026 = signal<Concepto[]>([
-    { orden: 1, nombre: 'Matrícula', tipo: 'Fijo', monto: 200, obligatorio: true },
-    { orden: 2, nombre: 'Libro', tipo: 'Fijo', monto: 50, obligatorio: true },
-    { orden: 3, nombre: 'Marzo', tipo: 'Mensual', monto: 100, obligatorio: true },
-    { orden: 4, nombre: 'Abril', tipo: 'Mensual', monto: 100, obligatorio: true },
-    { orden: 5, nombre: 'Taller extra', tipo: 'Opcional', monto: 30, obligatorio: false },
   ]);
 
   readonly cuotasCarlosChinga2026 = signal<Cuota[]>([

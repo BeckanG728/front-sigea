@@ -71,6 +71,10 @@ export class ConceptosComponent implements OnInit {
     return this.permisos.puede('conceptos', 'editar');
   }
 
+  get puedeCrear(): boolean {
+    return this.permisos.puede('conceptos','crear')
+  }
+
   get puedeEliminar(): boolean {
     return this.permisos.puede('conceptos', 'eliminar');
   }

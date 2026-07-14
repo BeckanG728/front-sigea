@@ -21,7 +21,7 @@ export class DashboardComponent {
   protected get matriculas() { return this.data.matriculasRecientes2026; }
 
   protected readonly kpiMatriculas = computed(() => this.matriculas().length);
-  protected readonly kpiAulas = computed(() => this.data.aulas().filter(a => a.estado === 'activo').length);
+  protected readonly kpiAulas = computed(() => this.data.aulas().filter(a => a.estado === true).length);
   protected readonly kpiPagosPendientes = computed(() =>
     this.data.cuotasCarlosChinga2026().filter(c => c.estado === 'pagar' || c.estado === 'pendiente').length
   );

@@ -116,7 +116,8 @@
       Obligatorio
     </label>
     @if (editarError) {
-      <div class="alert alert--danger mt-2"><i class="bi-exclamation-triangle alert__icon"></i><span>{{ editarError }}</span></div>
+    <div class="alert alert--danger mt-2"><i class="bi-exclamation-triangle alert__icon"></i><span>{{ editarError
+        }}</span></div>
     }
     <div class="flex gap-2 mt-3" style="justify-content:flex-end">
       <button type="button" class="btn btn--outline" (click)="cerrarEditar()">Cancelar</button>

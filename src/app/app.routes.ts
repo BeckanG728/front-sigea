@@ -90,8 +90,8 @@ export const routes: Routes = [
             path: 'registrar',
             canActivate: [funcionalidadGuard('MATRICULA_REGISTRAR')],
             loadComponent: () =>
-              import('./features/matricula/registrar-matricula/registrar-matricula.component')
-                .then(m => m.RegistrarMatriculaComponent)
+              import('./features/matricula/matricula.component')
+                .then(m => m.MatriculaComponent)
           }
         ]
       },
