@@ -76,4 +76,29 @@ export class AuditoriaApiService {
     this.totalPages.set(res.totalPages);
     this.currentPage.set(res.pageNumber);
   }
+
+  async cargarTodos(filtros: FiltrosAuditoria): Promise<AuditoriaItem[]> {
+    const params: any = { page: 0, size: 10000 };
+    if (filtros.modulo) params.modulo = filtros.modulo;
+    if (filtros.operacion) params.operacion = filtros.operacion;
+    if (filtros.desde) params.desde = filtros.desde;
+    if (filtros.hasta) params.hasta = filtros.hasta;
+
+    const res = await lastValueFrom(
+      this.http.get<PageResponse<ApiAuditoriaResponse>>(
+        `${environment.apiUrl}/api/reportes/auditoria`, { params }
+      )
+    );
+
+    return res.content.map((r, i) => ({
+      n: i + 1,
+      fecha: new Date(r.fechaHora).toLocaleString('es-PE'),
+      usuario: r.nombreUsuario,
+      modulo: r.modulo,
+      tabla: r.tablaAfectada,
+      operacion: r.operacion,
+      registro: r.codigoRegistro ?? '',
+      ip: r.ipOrigen,
+    }));
+  }
 }

@@ -44,6 +44,13 @@
     <input type="date" [(ngModel)]="data.fechaNacimiento" required />
   </div>
 
+  @if (exito()) {
+  <div class="alert alert--success mt-2">
+    <i class="bi-check-circle alert__icon"></i>
+    <span>{{ exito() }}</span>
+  </div>
+  }
+
   @if (error()) {
   <div class="alert alert--danger mt-2">
     <i class="bi-exclamation-triangle alert__icon"></i>

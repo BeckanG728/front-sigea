@@ -18,8 +18,9 @@ export class AlumnosComponent implements OnInit {
   readonly tiposDocumento = this.alumnoApi.tiposDocumento;
   readonly loading = this.alumnoApi.loading;
   readonly error = signal('');
+  readonly exito = signal('');
 
-  data: AlumnoRequest = {
+  private readonly INITIAL_DATA: AlumnoRequest = {
     codTipoDocumento: 0,
     numeroDocumento: '',
     nombres: '',
@@ -27,6 +28,8 @@ export class AlumnosComponent implements OnInit {
     apellidoMaterno: '',
     fechaNacimiento: '',
   };
+
+  data: AlumnoRequest = { ...this.INITIAL_DATA };
 
   constructor() {
     this.shellState.title.set('Nuevo Alumno');
@@ -41,14 +44,20 @@ export class AlumnosComponent implements OnInit {
     if (!this.validar()) return;
     this.loading.set(true);
     this.error.set('');
+    this.exito.set('');
     try {
       await this.alumnoApi.crearAlumno(this.data);
-      this.router.navigate(['/su/aulas']);
+      this.resetForm();
+      this.exito.set('Alumno creado correctamente.');
     } catch (e: any) {
       this.error.set(e.error?.mensaje || 'Error al crear alumno');
     } finally {
       this.loading.set(false);
     }
+  }
+
+  private resetForm(): void {
+    this.data = { ...this.INITIAL_DATA };
   }
 
   private validar(): boolean {
