@@ -91,9 +91,10 @@ export class AuditoriaComponent implements OnInit {
     this.buscar();
   }
 
-  exportar(): void {
+  async exportar(): Promise<void> {
     const cabeceras = ['N°', 'Fecha y hora', 'Usuario', 'Módulo', 'Tabla', 'Operación', 'Registro afectado', 'IP origen'];
-    const filas = this.eventos().map(ev => [ev.n, ev.fecha, ev.usuario, ev.modulo, ev.tabla, ev.operacion, ev.registro, ev.ip]);
+    const todos = await this.auditoriaApi.cargarTodos(this.filtros());
+    const filas = todos.map(ev => [ev.n, ev.fecha, ev.usuario, ev.modulo, ev.tabla, ev.operacion, ev.registro, ev.ip]);
     this.reportesApi.exportarCsv('reporte-auditoria.csv', cabeceras, filas);
   }
 }
