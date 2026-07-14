@@ -1,15 +1,8 @@
-import { Component, computed, signal, inject, OnInit } from '@angular/core';
+import { Component, signal, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
 import { ShellStateService } from '../../core/services/shell-state.service';
-import { AuditoriaApiService, AuditoriaItem } from '../../core/services/auditoria-api.service';
-
-interface FiltrosAuditoria {
-  fecha: string;
-  modulo: string;
-  usuario: string;
-  operacion: string;
-}
+import { AuditoriaApiService, FiltrosAuditoria } from '../../core/services/auditoria-api.service';
 
 @Component({
   selector: 'app-auditoria',
@@ -18,10 +11,9 @@ interface FiltrosAuditoria {
   templateUrl: './auditoria.html',
 })
 export class AuditoriaComponent implements OnInit {
-  readonly PAGE_SIZE = 10;
   readonly page = signal(1);
   readonly filtros = signal<FiltrosAuditoria>({
-    fecha: '', modulo: '', usuario: '', operacion: '',
+    modulo: '', operacion: '', desde: '', hasta: '',
   });
 
   private auditoriaApi = inject(AuditoriaApiService);
@@ -35,44 +27,34 @@ export class AuditoriaComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.auditoriaApi.cargar();
+    this.buscar();
   }
 
   get eventos() {
     return this.auditoriaApi.items;
   }
 
-  readonly modulos = computed(() =>
-    [...new Set(this.eventos().map(a => a.modulo))].sort(),
-  );
-  readonly usuarios = computed(() =>
-    [...new Set(this.eventos().map(a => a.usuario))].sort(),
-  );
-  readonly operaciones = computed(() =>
-    [...new Set(this.eventos().map(a => a.operacion))].sort(),
-  );
+  get totalPages() {
+    return this.auditoriaApi.totalPages;
+  }
 
-  readonly filtered = computed(() => {
-    const f = this.filtros();
-    return this.eventos().filter(a => {
-      if (f.fecha && !a.fecha.toLowerCase().includes(f.fecha.toLowerCase())) return false;
-      if (f.modulo && a.modulo !== f.modulo) return false;
-      if (f.usuario && a.usuario !== f.usuario) return false;
-      if (f.operacion && a.operacion !== f.operacion) return false;
-      return true;
-    });
-  });
+  get currentPage() {
+    return this.auditoriaApi.currentPage;
+  }
 
-  readonly totalPages = computed(() =>
-    Math.max(1, Math.ceil(this.filtered().length / this.PAGE_SIZE)),
-  );
+  readonly modulosDisponibles = [
+    'aula', 'alumno', 'nivel', 'grado', 'anio_academico',
+    'tipo_documento', 'matricula', 'concepto', 'tipo_concepto',
+    'auth', 'usuario', 'parametro',
+  ];
 
-  readonly paged = computed(() => {
-    const start = (this.page() - 1) * this.PAGE_SIZE;
-    return this.filtered().slice(start, start + this.PAGE_SIZE);
-  });
+  readonly operacionesDisponibles = [
+    'INSERT', 'UPDATE', 'DELETE', 'LOGIN', 'LOGIN_FAILED', 'LOGOUT', 'PAGO', 'MATRICULA',
+  ];
 
-  readonly pages = computed<(number | string)[]>(() => {
+  readonly pages = signal<(number | string)[]>([]);
+
+  private actualizarPaginas(): void {
     const total = this.totalPages();
     const cur = this.page();
     const range: (number | string)[] = [];
@@ -80,23 +62,30 @@ export class AuditoriaComponent implements OnInit {
       for (let i = 1; i <= total; i++) range.push(i);
     } else {
       range.push(1);
-      if (cur > 3) range.push('…');
+      if (cur > 3) range.push('...');
       const lo = Math.max(2, cur - 1);
       const hi = Math.min(total - 1, cur + 1);
       for (let i = lo; i <= hi; i++) range.push(i);
-      if (cur < total - 2) range.push('…');
+      if (cur < total - 2) range.push('...');
       range.push(total);
     }
-    return range;
-  });
+    this.pages.set(range);
+  }
+
+  async buscar(): Promise<void> {
+    await this.auditoriaApi.cargar(this.page() - 1, this.filtros());
+    this.actualizarPaginas();
+  }
 
   goToPage(p: number | string): void {
     if (typeof p === 'number' && p >= 1 && p <= this.totalPages()) {
       this.page.set(p);
+      this.buscar();
     }
   }
 
   onFilterChange(): void {
     this.page.set(1);
+    this.buscar();
   }
 }

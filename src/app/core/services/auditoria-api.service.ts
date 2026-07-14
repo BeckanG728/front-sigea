@@ -26,23 +26,45 @@ export interface ApiAuditoriaResponse {
   ipOrigen: string;
 }
 
+export interface PageResponse<T> {
+  content: T[];
+  pageNumber: number;
+  pageSize: number;
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
+}
+
+export interface FiltrosAuditoria {
+  modulo: string;
+  operacion: string;
+  desde: string;
+  hasta: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuditoriaApiService {
   private http = inject(HttpClient);
-  readonly items = signal<AuditoriaItem[]>([]);
 
-  async cargar(filtros?: { modulo?: string; desde?: string; hasta?: string }): Promise<void> {
-    const params: any = {};
-    if (filtros?.modulo) params.modulo = filtros.modulo;
-    if (filtros?.desde) params.desde = filtros.desde;
-    if (filtros?.hasta) params.hasta = filtros.hasta;
+  readonly items = signal<AuditoriaItem[]>([]);
+  readonly totalPages = signal(0);
+  readonly currentPage = signal(0);
+
+  async cargar(page: number, filtros: FiltrosAuditoria): Promise<void> {
+    const params: any = { page, size: 5 };
+    if (filtros.modulo) params.modulo = filtros.modulo;
+    if (filtros.operacion) params.operacion = filtros.operacion;
+    if (filtros.desde) params.desde = filtros.desde;
+    if (filtros.hasta) params.hasta = filtros.hasta;
 
     const res = await lastValueFrom(
-      this.http.get<ApiAuditoriaResponse[]>(`${environment.apiUrl}/api/reportes/auditoria`, { params })
+      this.http.get<PageResponse<ApiAuditoriaResponse>>(
+        `${environment.apiUrl}/api/reportes/auditoria`, { params }
+      )
     );
 
-    this.items.set(res.map((r, i) => ({
-      n: i + 1,
+    this.items.set(res.content.map((r, i) => ({
+      n: res.pageNumber * res.pageSize + i + 1,
       fecha: new Date(r.fechaHora).toLocaleString('es-PE'),
       usuario: r.nombreUsuario,
       modulo: r.modulo,
@@ -51,5 +73,7 @@ export class AuditoriaApiService {
       registro: r.codigoRegistro ?? '',
       ip: r.ipOrigen,
     })));
+    this.totalPages.set(res.totalPages);
+    this.currentPage.set(res.pageNumber);
   }
 }
