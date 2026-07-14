@@ -12,6 +12,32 @@ export interface Usuario {
   secreto2FA: string | null;
 }
 
+export interface AnioAcademico {
+  id: number;
+  anio: number;
+  estado: string;
+  permiteMatriculas: boolean;
+}
+
+export interface Alumno {
+  id: number;
+  documento: string;
+  paterno: string;
+  materno: string;
+  nombre: string;
+  estado: string;
+}
+
+export interface ObligacionPago {
+  id: number;
+  concepto: string;
+  monto: number;
+  estado: string;
+  fechaVencimiento: string;
+  ordenPago: number;
+  saldoPendiente: number;
+}
+
 export interface Aula {
   cod: number;
   nivel: string;
@@ -20,6 +46,7 @@ export interface Aula {
   cupo: number;
   max: number;
   estado: string;
+  periodo: number;
 }
 
 export interface AlumnoAula {
@@ -105,12 +132,24 @@ export type PermisoMap = { [subKey: string]: boolean };
 export class DataService {
   readonly usuarios = signal<Usuario[]>([]);
 
+  readonly aniosAcademicos = signal<AnioAcademico[]>([
+    { id: 1, anio: 2025, estado: 'cerrado', permiteMatriculas: false },
+    { id: 2, anio: 2026, estado: 'activo', permiteMatriculas: true },
+  ]);
+
+  readonly alumnos = signal<Alumno[]>([
+    { id: 1, documento: '71234567', paterno: 'Chinga', materno: 'Ramos', nombre: 'Carlos', estado: 'activo' },
+    { id: 2, documento: '72345678', paterno: 'Chinga', materno: 'López', nombre: 'Ana', estado: 'activo' },
+    { id: 3, documento: '73456789', paterno: 'Quispe', materno: 'Meza', nombre: 'Pedro', estado: 'activo' },
+    { id: 4, documento: '74567890', paterno: 'Ramos', materno: 'Cruz', nombre: 'Ana', estado: 'inactivo' },
+  ]);
+
   readonly aulas = signal<Aula[]>([
-    { cod: 1, nivel: 'Inicial', grado: '3 años', seccion: 'A', cupo: 20, max: 25, estado: 'activo' },
-    { cod: 2, nivel: 'Inicial', grado: '3 años', seccion: 'B', cupo: 18, max: 25, estado: 'activo' },
-    { cod: 3, nivel: 'Primaria', grado: '1°', seccion: 'A', cupo: 30, max: 35, estado: 'activo' },
-    { cod: 4, nivel: 'Secundaria', grado: '1°', seccion: 'A', cupo: 35, max: 35, estado: 'activo' },
-    { cod: 5, nivel: 'Secundaria', grado: '2°', seccion: 'A', cupo: 28, max: 28, estado: 'eliminado' },
+    { cod: 1, nivel: 'Inicial', grado: '3 años', seccion: 'A', cupo: 20, max: 25, estado: 'activo', periodo: 2026 },
+    { cod: 2, nivel: 'Inicial', grado: '3 años', seccion: 'B', cupo: 18, max: 25, estado: 'activo', periodo: 2026 },
+    { cod: 3, nivel: 'Primaria', grado: '1°', seccion: 'A', cupo: 30, max: 35, estado: 'activo', periodo: 2026 },
+    { cod: 4, nivel: 'Secundaria', grado: '1°', seccion: 'A', cupo: 35, max: 35, estado: 'activo', periodo: 2026 },
+    { cod: 5, nivel: 'Secundaria', grado: '2°', seccion: 'A', cupo: 28, max: 28, estado: 'eliminado', periodo: 2026 },
   ]);
 
   readonly alumnosAula4 = signal<AlumnoAula[]>([
