@@ -52,17 +52,18 @@
                 <i class="bi" [class.bi-eye]="u.permisosVisibles" [class.bi-eye-slash]="!u.permisosVisibles"
                   style="font-size:14px"></i>
               </button>
-              @if (u.id !== auth.idUsuario() && !u.noEliminable) {
-              <button type="button" class="btn btn--icon btn--outline btn--sm" title="Editar"
-                (click)="$event.stopPropagation(); openEditarModal(u)">
-                <i class="bi bi-pencil" style="font-size:14px"></i>
-              </button>
-              @if (!u.noEliminable) {
-              <button type="button" class="btn btn--icon btn--outline btn--sm" title="Eliminar"
-                (click)="$event.stopPropagation(); confirmEliminar(u)">
-                <i class="bi bi-trash" style="font-size:14px"></i>
-              </button>
-              }
+              @if (u.id !== auth.idUsuario() && !u.noEliminable && u.estado === 'activo') {
+                <button type="button" class="btn btn--icon btn--outline btn--sm" title="Editar"
+                  (click)="$event.stopPropagation(); openEditarModal(u)">
+                  <i class="bi bi-pencil" style="font-size:14px"></i>
+                </button>
+                <button 
+                  type="button" 
+                  class="btn btn--icon btn--outline btn--sm" 
+                  title="Eliminar"
+                    (click)="$event.stopPropagation(); confirmEliminar(u)">
+                    <i class="bi bi-trash" style="font-size:14px"></i>
+                  </button>
               }
             </td>
           </tr>
@@ -91,17 +92,17 @@
   </div>
 
   <div class="card">
-  <div class="card__title">
-    <i class="bi bi-lock"></i> Permisos — {{ selectedUser()?.nombre }}
+    <div class="card__title">
+      <i class="bi bi-lock"></i> Permisos — {{ selectedUser()?.nombre }}
 
-    @if (selectedUser()) {
+      @if (selectedUser()) {
       <span class="badge badge--su">
         <span>{{ selectedUser()!.rol }}</span>
       </span>
-    }
-  </div>
+      }
+    </div>
 
-  @if (selectedUser()?.permisosVisibles) {
+    @if (selectedUser()?.permisosVisibles) {
 
     <div style="font-size:12px; color:var(--color-text-muted); margin-bottom:8px">
       Permisos asignados por rol
@@ -109,22 +110,20 @@
 
     @for (m of modulosDisponibles(); track m.key) {
 
-      <div class="flex gap-2"
-           style="align-items:center; padding:6px 0; font-size:13px">
+    <div class="flex gap-2" style="align-items:center; padding:6px 0; font-size:13px">
 
-        <i class="bi bi-check-circle"
-           style="font-size:14px">
-        </i>
+      <i class="bi bi-check-circle" style="font-size:14px">
+      </i>
 
-        <span>{{ m.label }}</span>
+      <span>{{ m.label }}</span>
 
-        @if (permisosRol()[m.key]) {
-            <span class="badge badge--success">Habilitado</span>
-        } @else {
-            <span class="badge badge--danger">No habilitado</span>
-        }
+      @if (permisosRol()[m.key]) {
+      <span class="badge badge--success">Habilitado</span>
+      } @else {
+      <span class="badge badge--danger">No habilitado</span>
+      }
 
-      </div>
+    </div>
     }
 
     <p class="note mt-2">
@@ -133,7 +132,7 @@
       <a href="/su/roles">Roles</a>.
     </p>
 
-  } @else {
+    } @else {
 
     <p class="note mt-2">
       <i class="bi bi-slash-circle"></i>
@@ -141,8 +140,8 @@
       Usa el ícono del ojo en la tabla para mostrarlos.
     </p>
 
-  }
-</div>
+    }
+  </div>
 </div>
 
 <app-modal [visible]="usuarioModalVisible()" [title]="usuarioModalTitulo()" (close)="usuarioModalVisible.set(false)">
