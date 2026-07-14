@@ -6,8 +6,10 @@ import { ModalComponent } from '../../shared/modal/modal.component';
 import { MatriculaService, AnioAcademico, PreviewResponse, RegisterResponse } from './matricula.service';
 import { ShellStateService } from '../../core/services/shell-state.service';
 import { AuthService } from '../../core/services/auth.service';
-import { Aula, Alumno } from '../../core/services/data.service';
+import { Aula } from '../../core/services/data.service';
 import { ConceptoResponse } from '../../core/services/concepto-api.service';
+import { AulaApiService, AulaListado, Grado } from '../../core/services/aula-api.service';
+import { AlumnoBusquedaResponse } from '../../core/services/alumno-api.service';
 
 type WizardStep = 'selection' | 'confirmation' | 'twofactor' | 'success';
 
@@ -23,6 +25,7 @@ export class MatriculaComponent {
   private auth = inject(AuthService);
   private router = inject(Router);
   private destroyRef = inject(DestroyRef);
+  readonly aulaApiService = inject(AulaApiService);
 
   readonly moneda = 'S/';
 
@@ -32,9 +35,21 @@ export class MatriculaComponent {
     this.cargarDatosIniciales();
   }
 
-  private cargarDatosIniciales(): void {
-    this.matriculaService.cargarAniosAcademicos().then(() => this.cargarDatosPorAnio());
-    this.matriculaService.cargarAlumnos();
+  private async cargarDatosIniciales(): Promise<void> {
+    await this.matriculaService.cargarAniosAcademicos();
+    // this.matriculaService.cargarAlumnos(); // reemplazado por búsqueda de alumno por DNI
+
+    try {
+      const activo = await this.matriculaService.cargarAnioActivo();
+      const found = this.aniosAcademicos().find(a => a.anio === activo.anio);
+      if (found) {
+        this.anioSeleccionado.set(found.id);
+      }
+    } catch {
+      // si no hay año activo definido, se mantiene la preselección por defecto
+    }
+
+    this.cargarDatosPorAnio();
   }
 
   private cargarDatosPorAnio(): void {
@@ -63,18 +78,52 @@ export class MatriculaComponent {
   }
 
   // ─── Alumno ─────────────────────────────────
-  readonly buscables = this.matriculaService.alumnos;
   alumnoID = signal(0);
   buscarAlumnoVisible = false;
+  alumnoSeleccionado = signal<AlumnoBusquedaResponse | null>(null);
 
-  readonly alumnoActual = computed<Alumno | undefined>(() =>
-    this.buscables().find(a => a.id === this.alumnoID())
-  );
+  dniInput = signal('');
+  alumnoEncontrado = signal<AlumnoBusquedaResponse | null>(null);
+  buscandoAlumno = signal(false);
+  dniNoEncontrado = signal(false);
 
-  abrirBuscarAlumno(): void { this.buscarAlumnoVisible = true; }
+  abrirBuscarAlumno(): void {
+    this.dniInput.set('');
+    this.alumnoEncontrado.set(null);
+    this.dniNoEncontrado.set(false);
+    this.buscarAlumnoVisible = true;
+  }
+
+  onDniInput(value: string): void {
+    this.dniInput.set(value);
+    this.alumnoEncontrado.set(null);
+    this.dniNoEncontrado.set(false);
+  }
+
+  async buscarAlumnoPorDni(): Promise<void> {
+    this.buscandoAlumno.set(true);
+    this.dniNoEncontrado.set(false);
+    try {
+      const alumno = await this.matriculaService.buscarAlumnoPorDni(this.dniInput());
+      if (alumno) {
+        this.alumnoEncontrado.set(alumno);
+      } else {
+        this.alumnoEncontrado.set(null);
+        this.dniNoEncontrado.set(true);
+      }
+    } catch {
+      this.alumnoEncontrado.set(null);
+      this.dniNoEncontrado.set(true);
+    } finally {
+      this.buscandoAlumno.set(false);
+    }
+  }
 
   seleccionarAlumno(id: number): void {
     this.alumnoID.set(id);
+    this.alumnoSeleccionado.set(this.alumnoEncontrado());
+    this.dniInput.set('');
+    this.alumnoEncontrado.set(null);
     this.buscarAlumnoVisible = false;
     this.erroresPreview.set([]);
     this.previewData.set(null);
@@ -84,6 +133,15 @@ export class MatriculaComponent {
   // ─── Aula ───────────────────────────────────
   aulaId = signal(0);
   buscarAulaVisible = false;
+
+  nivelSeleccionado = signal<number | null>(null);
+  gradoSeleccionado = signal<number | null>(null);
+  aulasResultado = signal<AulaListado[]>([]);
+  buscandoAulas = signal(false);
+
+  readonly gradosFiltrados = computed<Grado[]>(() =>
+    this.aulaApiService.grados().filter(g => g.codNivel === this.nivelSeleccionado())
+  );
 
   readonly aulasDisponibles = computed<Aula[]>(() =>
     this.matriculaService.aulas().filter(a =>
@@ -95,9 +153,43 @@ export class MatriculaComponent {
     return this.matriculaService.aulas().find(a => a.cod === this.aulaId());
   }
 
-  abrirBuscarAula(): void { this.buscarAulaVisible = true; }
+  abrirBuscarAula(): void {
+    if (this.aulaApiService.niveles().length === 0) {
+      this.aulaApiService.cargarNiveles();
+    }
+    if (this.aulaApiService.grados().length === 0) {
+      this.aulaApiService.cargarGrados();
+    }
+    this.nivelSeleccionado.set(null);
+    this.gradoSeleccionado.set(null);
+    this.aulasResultado.set([]);
+    this.buscarAulaVisible = true;
+  }
+
+  onNivelChange(id: number | null): void {
+    this.nivelSeleccionado.set(id);
+    this.gradoSeleccionado.set(null);
+  }
+
+  async buscarAulas(): Promise<void> {
+    const anio = this.anioActual()?.anio;
+    if (!anio) { this.aulasResultado.set([]); return; }
+    this.buscandoAulas.set(true);
+    try {
+      const res = await this.matriculaService.buscarAulas(
+        anio,
+        this.nivelSeleccionado() ?? undefined,
+        this.gradoSeleccionado() ?? undefined
+      );
+      this.aulasResultado.set(res);
+    } finally {
+      this.buscandoAulas.set(false);
+    }
+  }
 
   seleccionarAula(cod: number): void {
+    const aula = this.aulasResultado().find(a => a.id === cod);
+    if (!aula) return;
     this.aulaId.set(cod);
     this.buscarAulaVisible = false;
     this.erroresPreview.set([]);
