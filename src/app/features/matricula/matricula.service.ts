@@ -5,7 +5,7 @@ import { environment } from '../../../environments/environment';
 import { Alumno, Aula, ObligacionPago, MatriculaRegistrada, DeudaAnterior } from '../../core/services/data.service';
 import { AulaListado } from '../../core/services/aula-api.service';
 import { ConceptoResponse } from '../../core/services/concepto-api.service';
-import { AlumnoResponse } from '../../core/services/alumno-api.service';
+import { AlumnoResponse, AlumnoBusquedaResponse } from '../../core/services/alumno-api.service';
 
 export interface AnioAcademico {
   id: number;
@@ -94,6 +94,28 @@ export class MatriculaService {
       this.http.get<AlumnoResponse[]>(`${environment.apiUrl}/api/alumnos`)
     );
     this.alumnos.set(res.map(mapAlumno));
+  }
+
+  async buscarAlumnoPorDni(dni: string): Promise<AlumnoBusquedaResponse | null> {
+    const res = await lastValueFrom(
+      this.http.get<AlumnoBusquedaResponse[]>(`${environment.apiUrl}/api/alumnos/documento/${dni}`)
+    );
+    return res && res.length > 0 ? res[0] : null;
+  }
+
+  async buscarAulas(anio: number, nivelId?: number, gradoId?: number): Promise<AulaListado[]> {
+    const params: Record<string, string> = { anioAcademico: String(anio) };
+    if (nivelId) params['nivel'] = String(nivelId);
+    if (gradoId) params['grado'] = String(gradoId);
+    return await lastValueFrom(
+      this.http.get<AulaListado[]>(`${environment.apiUrl}/api/aulas`, { params })
+    );
+  }
+
+  async cargarAnioActivo(): Promise<AnioAcademico> {
+    return await lastValueFrom(
+      this.http.get<AnioAcademico>(`${environment.apiUrl}/api/anios-academicos/activo`)
+    );
   }
 
   preview(alumnoId: number, aulaId: number, anioId: number): Observable<PreviewResponse> {

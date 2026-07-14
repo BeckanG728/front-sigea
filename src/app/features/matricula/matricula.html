@@ -39,8 +39,8 @@
       <div class="field-row--search field" style="margin-bottom:var(--space-5)">
         <div style="display:flex;flex-direction:column;gap:4px">
           <label style="text-transform:uppercase;letter-spacing:0.04em">Alumno</label>
-          @if (alumnoActual()) {
-            <span style="font-weight:700">{{ alumnoActual()!.paterno }} {{ alumnoActual()!.materno }}, {{ alumnoActual()!.nombre }}</span>
+          @if (alumnoSeleccionado()) {
+            <span style="font-weight:700">{{ alumnoSeleccionado()!.nombreCompleto }}</span>
           } @else {
             <span style="color:var(--color-text-muted)">Seleccione un alumno...</span>
           }
@@ -169,45 +169,79 @@
 
 <!-- Buscar Alumno Modal -->
 <app-modal [visible]="buscarAlumnoVisible" title="Buscar alumno" (close)="buscarAlumnoVisible = false">
-  <input placeholder="Buscar por nombre o documento..."
-         style="width:100%;border:2px solid var(--color-border);padding:8px;margin-bottom:10px" />
-  <div class="table-wrap">
-    <table class="table">
-      <thead><tr><th>Documento</th><th>Ap. paterno</th><th>Ap. materno</th><th>Nombre</th><th></th></tr></thead>
-      <tbody>
-        @for (a of buscables(); track a.id) {
-          <tr style="cursor:pointer">
-            <td>{{ a.documento }}</td>
-            <td>{{ a.paterno }}</td>
-            <td>{{ a.materno }}</td>
-            <td>{{ a.nombre }}</td>
-            <td><button class="btn btn--sm btn--primary" (click)="seleccionarAlumno(a.id)">Sel.</button></td>
-          </tr>
-        }
-      </tbody>
-    </table>
+  <div style="display:flex;gap:8px;margin-bottom:10px">
+    <input type="text" maxlength="8" pattern="\d{8}" #dniInp
+           placeholder="DNI (8 dígitos)"
+           style="flex:1;border:2px solid var(--color-border);padding:8px"
+           (input)="onDniInput(dniInp.value)" />
+    <button class="btn btn--dark" [disabled]="dniInput().length !== 8 || buscandoAlumno()"
+            (click)="buscarAlumnoPorDni()">
+      @if (buscandoAlumno()) {
+        <i class="bi-arrow-repeat spinner"></i>
+      } @else {
+        <i class="bi-search"></i>
+      }
+      Buscar
+    </button>
   </div>
-  <p class="note mt-2">1 - {{ buscables().length }} de {{ buscables().length }}</p>
+
+  @if (alumnoEncontrado(); as alumno) {
+    <div class="card" style="padding:12px;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-weight:700">{{ alumno.nombreCompleto }}</div>
+        <div class="note">DNI: {{ alumno.numeroDocumento }}</div>
+      </div>
+      <button class="btn btn--sm btn--primary" (click)="seleccionarAlumno(alumno.id)">Seleccionar</button>
+    </div>
+  }
+
+  @if (dniNoEncontrado()) {
+    <div class="alert alert--warning">
+      <i class="bi-exclamation-triangle alert__icon"></i>
+      <span>DNI no encontrado</span>
+    </div>
+  }
 </app-modal>
 
 <!-- Buscar Aula Modal -->
 <app-modal [visible]="buscarAulaVisible" title="Buscar aula — {{ anioActual()?.anio ?? '—' }}"
            (close)="buscarAulaVisible = false">
-  <input placeholder="Nivel, grado..."
-         style="width:100%;border:2px solid var(--color-border);padding:8px;margin-bottom:10px" />
+  <div style="display:flex;gap:8px;margin-bottom:10px">
+    <select class="input" style="flex:1" [ngModel]="nivelSeleccionado()" (ngModelChange)="onNivelChange($event)">
+      <option [ngValue]="null">Seleccione nivel...</option>
+      @for (n of aulaApiService.niveles(); track n.id) {
+        <option [ngValue]="n.id">{{ n.nombre }}</option>
+      }
+    </select>
+    <select class="input" style="flex:1" [ngModel]="gradoSeleccionado()" (ngModelChange)="gradoSeleccionado.set($event)"
+            [disabled]="!nivelSeleccionado()">
+      <option [ngValue]="null">Seleccione grado...</option>
+      @for (g of gradosFiltrados(); track g.id) {
+        <option [ngValue]="g.id">{{ g.nombreGrado }}</option>
+      }
+    </select>
+    <button class="btn btn--dark" (click)="buscarAulas()">
+      @if (buscandoAulas()) {
+        <i class="bi-arrow-repeat spinner"></i>
+      } @else {
+        <i class="bi-search"></i>
+      }
+      Buscar
+    </button>
+  </div>
   <div class="table-wrap">
     <table class="table">
       <thead><tr><th>Nivel</th><th>Grado</th><th>Sección</th><th>Matriculados</th><th></th></tr></thead>
       <tbody>
-        @for (a of aulasDisponibles(); track a.cod) {
+        @for (a of aulasResultado(); track a.id) {
           <tr>
             <td>{{ a.nivel }}</td>
             <td>{{ a.grado }}</td>
             <td>{{ a.seccion }}</td>
-            <td>{{ a.cupo }}/{{ a.max }}</td>
+            <td>{{ a.matriculados }}/{{ a.capacidadMaxima }}</td>
             <td>
-              <button class="btn btn--sm" [class.btn--primary]="a.cupo < a.max" [class.btn--outline]="a.cupo >= a.max"
-                      [disabled]="a.cupo >= a.max" (click)="seleccionarAula(a.cod)">
+              <button class="btn btn--sm" [class.btn--primary]="a.vacantes > 0" [class.btn--outline]="a.vacantes <= 0"
+                      [disabled]="a.vacantes <= 0" (click)="seleccionarAula(a.id)">
                 Sel.
               </button>
             </td>
@@ -216,7 +250,11 @@
       </tbody>
     </table>
   </div>
-  <p class="note mt-2">{{ aulasDisponibles().length }} aulas disponibles</p>
+  @if (aulasResultado().length === 0 && !buscandoAulas()) {
+    <p class="note mt-2">Sin resultados. Seleccione nivel/grado y busque.</p>
+  } @else {
+    <p class="note mt-2">{{ aulasResultado().length }} aulas encontradas</p>
+  }
 </app-modal>
 
 <!-- Modal de Confirmación -->
@@ -227,11 +265,11 @@
       <div style="margin-top:6px">
         <div style="display:flex;padding:5px 0;border-bottom:1px solid var(--color-border-soft)">
           <span style="width:100px;font-weight:600;font-size:12px">Alumno</span>
-          <span>{{ alumnoActual()?.paterno }} {{ alumnoActual()?.materno }}, {{ alumnoActual()?.nombre }}</span>
+          <span>{{ alumnoSeleccionado()?.nombreCompleto }}</span>
         </div>
         <div style="display:flex;padding:5px 0;border-bottom:1px solid var(--color-border-soft)">
           <span style="width:100px;font-weight:600;font-size:12px">Documento</span>
-          <span>{{ alumnoActual()?.documento }}</span>
+          <span>{{ alumnoSeleccionado()?.numeroDocumento }}</span>
         </div>
         <div style="display:flex;padding:5px 0;border-bottom:1px solid var(--color-border-soft)">
           <span style="width:100px;font-weight:600;font-size:12px">Periodo</span>
