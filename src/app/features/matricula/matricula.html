@@ -30,7 +30,7 @@
         <select class="input" [ngModel]="anioSeleccionado()" (ngModelChange)="onAnioChange($event)">
           @for (a of aniosAcademicos(); track a.id) {
             <option [value]="a.id">
-              {{ a.anio }} {{ a.estado === 'cerrado' ? '(Cerrado)' : '' }}
+              {{ a.anio }} {{ !a.estado ? '(Cerrado)' : '' }}
             </option>
           }
         </select>
@@ -95,7 +95,7 @@
         </div>
       }
 
-      @if (anioActual() && !anioActual()!.permiteMatriculas) {
+      @if (anioActual() && !anioActual()!.estado) {
         <div class="alert alert--warning" style="margin-top:8px">
           <i class="bi-exclamation-triangle alert__icon"></i>
           <span>El año académico {{ anioActual()!.anio }} está cerrado y no permite nuevas matrículas.</span>
@@ -120,10 +120,10 @@
         <table class="table">
           <thead><tr><th>#</th><th>Concepto</th><th>Tipo</th><th>Monto</th><th>Obligatorio</th></tr></thead>
           <tbody>
-            @for (c of conceptosVista(); track c.orden) {
+            @for (c of conceptosVista(); track c.id) {
               <tr>
-                <td>{{ c.orden }}</td>
-                <td>{{ c.nombre }}</td>
+                <td>{{ c.ordenPago }}</td>
+                <td>{{ c.nombreConcepto }}</td>
                 <td>{{ c.tipo }}</td>
                 <td>{{ moneda }} {{ c.monto }}</td>
                 <td>
@@ -268,10 +268,10 @@
         <table class="table">
           <thead><tr><th>#</th><th>Concepto</th><th>Tipo</th><th>Monto</th><th></th></tr></thead>
           <tbody>
-            @for (c of conceptos(); track c.orden) {
+            @for (c of conceptos(); track c.id) {
               <tr>
-                <td>{{ c.orden }}</td>
-                <td>{{ c.nombre }}</td>
+                <td>{{ c.ordenPago }}</td>
+                <td>{{ c.nombreConcepto }}</td>
                 <td>{{ c.tipo }}</td>
                 <td>{{ moneda }} {{ c.monto }}</td>
                 <td style="text-align:center">
@@ -279,8 +279,8 @@
                     <i class="bi-check-lg" style="color:var(--color-success)" title="Obligatorio"></i>
                   } @else {
                     <input type="checkbox"
-                           [checked]="conceptosToggle().get(c.orden) === true"
-                           (change)="toggleConcepto(c.orden)"
+                           [checked]="conceptosToggle().get(c.id) === true"
+                           (change)="toggleConcepto(c.id)"
                            title="Incluir/Excluir" />
                   }
                 </td>

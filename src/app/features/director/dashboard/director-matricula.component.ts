@@ -33,7 +33,7 @@ export class DirectorMatriculaComponent {
   ];
 
   protected readonly aulasActivas = computed(() =>
-    this.data.aulas().filter(a => a.estado === 'activo')
+    this.data.aulas().filter(a => a.estado === true)
   );
 
   protected modalAlumnoVisible = signal(false);

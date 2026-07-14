@@ -3,10 +3,11 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ModalComponent } from '../../shared/modal/modal.component';
-import { MatriculaService, PreviewResponse, RegisterResponse } from './matricula.service';
+import { MatriculaService, AnioAcademico, PreviewResponse, RegisterResponse } from './matricula.service';
 import { ShellStateService } from '../../core/services/shell-state.service';
 import { AuthService } from '../../core/services/auth.service';
-import { Aula, Alumno, AnioAcademico, Concepto } from '../../core/services/data.service';
+import { Aula, Alumno } from '../../core/services/data.service';
+import { ConceptoResponse } from '../../core/services/concepto-api.service';
 
 type WizardStep = 'selection' | 'confirmation' | 'twofactor' | 'success';
 
@@ -28,6 +29,20 @@ export class MatriculaComponent {
   constructor() {
     this.shellState.title.set('Matrícula');
     this.shellState.icon.set('bi-pencil-square');
+    this.cargarDatosIniciales();
+  }
+
+  private cargarDatosIniciales(): void {
+    this.matriculaService.cargarAniosAcademicos().then(() => this.cargarDatosPorAnio());
+    this.matriculaService.cargarAlumnos();
+  }
+
+  private cargarDatosPorAnio(): void {
+    const anio = this.anioActual();
+    if (anio) {
+      this.matriculaService.cargarConceptos(anio.id);
+      this.matriculaService.cargarAulas(anio.anio);
+    }
   }
 
   // ─── Año ────────────────────────────────────
@@ -44,6 +59,7 @@ export class MatriculaComponent {
     this.aulaId.set(0);
     this.erroresPreview.set([]);
     this.previewData.set(null);
+    this.cargarDatosPorAnio();
   }
 
   // ─── Alumno ─────────────────────────────────
@@ -62,6 +78,7 @@ export class MatriculaComponent {
     this.buscarAlumnoVisible = false;
     this.erroresPreview.set([]);
     this.previewData.set(null);
+    this.matriculaService.cargarDeudas(id);
   }
 
   // ─── Aula ───────────────────────────────────
@@ -70,7 +87,7 @@ export class MatriculaComponent {
 
   readonly aulasDisponibles = computed<Aula[]>(() =>
     this.matriculaService.aulas().filter(a =>
-      a.estado === 'activo' && a.periodo === this.anioActual()?.anio
+      a.estado === true && a.periodo === this.anioActual()?.anio
     )
   );
 
@@ -89,7 +106,7 @@ export class MatriculaComponent {
 
   // ─── Botón habilitado ───────────────────────
   get puedeMatricular(): boolean {
-    if (!this.anioActual()?.permiteMatriculas) return false;
+    if (this.anioActual()?.estado !== true) return false;
     if (this.alumnoID() === 0) return false;
     if (this.aulaId() === 0) return false;
     const aula = this.aulaActual;
@@ -116,7 +133,7 @@ export class MatriculaComponent {
       }
       this.previewData.set(res);
       this.conceptosToggle.set(new Map(
-        res.conceptos.filter(c => c.obligatorio).map(c => [c.orden, true] as [number, boolean])
+        res.conceptos.filter(c => c.obligatorio).map(c => [c.id, true] as [number, boolean])
       ));
       this.paso.set('confirmation');
     });
@@ -124,12 +141,12 @@ export class MatriculaComponent {
 
   // ─── Deudas (para template) ─────────────────
   readonly deudasPendientes = computed(() =>
-    this.matriculaService.getDeudasByAlumno(this.alumnoID()).filter(d => d.estado === 'pendiente')
+    this.matriculaService.deudas().filter(d => d.estado === 'pendiente')
   );
   readonly tieneDeudasPendientes = computed(() => this.deudasPendientes().length > 0);
 
   // ─── Conceptos (para template) ──────────────
-  readonly conceptosVista = this.matriculaService.conceptos2026;
+  readonly conceptosVista = this.matriculaService.conceptos;
 
   // ─── Wizard ─────────────────────────────────
   paso = signal<WizardStep>('selection');
@@ -149,13 +166,13 @@ export class MatriculaComponent {
     });
   }
 
-  readonly conceptos = computed<Concepto[]>(() =>
+  readonly conceptos = computed<ConceptoResponse[]>(() =>
     this.previewData()?.conceptos ?? []
   );
 
   readonly subtotal = computed(() =>
     this.conceptos()
-      .filter(c => c.obligatorio || this.conceptosToggle().get(c.orden) === true)
+      .filter(c => c.obligatorio || this.conceptosToggle().get(c.id) === true)
       .reduce((s, c) => s + c.monto, 0)
   );
 
@@ -193,8 +210,9 @@ export class MatriculaComponent {
   registroData = signal<RegisterResponse | null>(null);
 
   private ejecutar(): void {
-    const conceptosActivos = this.conceptos()
-      .filter(c => c.obligatorio || this.conceptosToggle().get(c.orden) === true);
+    const conceptosActivosIds = this.conceptos()
+      .filter(c => c.obligatorio || this.conceptosToggle().get(c.id) === true)
+      .map(c => c.id);
 
     this.loadingRegistro.set(true);
 
@@ -202,7 +220,7 @@ export class MatriculaComponent {
       this.alumnoID(),
       this.aulaId(),
       this.anioSeleccionado(),
-      conceptosActivos
+      conceptosActivosIds
     ).pipe(
       takeUntilDestroyed(this.destroyRef)
     ).subscribe(res => {
