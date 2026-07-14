@@ -71,22 +71,22 @@ export class MatriculaService {
     this.aniosAcademicos.set(res);
   }
 
-  async cargarConceptos(anioId: number): Promise<void> {
+  async cargarConceptos(anio: number): Promise<void> {
     const res = await lastValueFrom(
       this.http.get<ConceptoResponse[]>(`${environment.apiUrl}/api/conceptos`, {
-        params: { anioAcademicoId: String(anioId) }
+        params: { anio: String(anio) }
       })
     );
     this.conceptos.set(res);
   }
 
-  async cargarAulas(anio: number): Promise<void> {
+  async cargarAulas(anioId: number, anioPeriodo: number): Promise<void> {
     const res = await lastValueFrom(
       this.http.get<AulaListado[]>(`${environment.apiUrl}/api/aulas`, {
-        params: { anioAcademico: String(anio) }
+        params: { anioAcademico: String(anioId) }
       })
     );
-    this.aulas.set(res.map(a => mapAula(a, anio)));
+    this.aulas.set(res.map(a => mapAula(a, anioPeriodo)));
   }
 
   async cargarAlumnos(): Promise<void> {
@@ -103,8 +103,8 @@ export class MatriculaService {
     return res && res.length > 0 ? res[0] : null;
   }
 
-  async buscarAulas(anio: number, nivelId?: number, gradoId?: number): Promise<AulaListado[]> {
-    const params: Record<string, string> = { anioAcademico: String(anio) };
+  async buscarAulas(anioId: number, nivelId?: number, gradoId?: number): Promise<AulaListado[]> {
+    const params: Record<string, string> = { anioAcademico: String(anioId) };
     if (nivelId) params['nivel'] = String(nivelId);
     if (gradoId) params['grado'] = String(gradoId);
     return await lastValueFrom(
@@ -119,12 +119,10 @@ export class MatriculaService {
   }
 
   preview(alumnoId: number, aulaId: number, anioId: number): Observable<PreviewResponse> {
-    return this.http.get<PreviewResponse>(`${environment.apiUrl}/api/matricula/preview`, {
-      params: {
-        alumnoId: String(alumnoId),
-        aulaId: String(aulaId),
-        anioId: String(anioId),
-      },
+    return this.http.post<PreviewResponse>(`${environment.apiUrl}/api/matricula/preview`, {
+      alumnoId,
+      aulaId,
+      anioId,
     });
   }
 
@@ -133,7 +131,7 @@ export class MatriculaService {
       alumnoId,
       aulaId,
       anioId,
-      conceptosIds: conceptosActivosIds,
+      conceptosActivos: conceptosActivosIds,
     });
   }
 

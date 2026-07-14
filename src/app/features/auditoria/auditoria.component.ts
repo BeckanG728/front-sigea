@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
 import { ShellStateService } from '../../core/services/shell-state.service';
 import { AuditoriaApiService, FiltrosAuditoria } from '../../core/services/auditoria-api.service';
+import { ReportesApiService } from '../../core/services/reportes-api.service';
 
 @Component({
   selector: 'app-auditoria',
@@ -17,6 +18,7 @@ export class AuditoriaComponent implements OnInit {
   });
 
   private auditoriaApi = inject(AuditoriaApiService);
+  private reportesApi = inject(ReportesApiService);
 
   constructor(
     private auth: AuthService,
@@ -87,5 +89,11 @@ export class AuditoriaComponent implements OnInit {
   onFilterChange(): void {
     this.page.set(1);
     this.buscar();
+  }
+
+  exportar(): void {
+    const cabeceras = ['N°', 'Fecha y hora', 'Usuario', 'Módulo', 'Tabla', 'Operación', 'Registro afectado', 'IP origen'];
+    const filas = this.eventos().map(ev => [ev.n, ev.fecha, ev.usuario, ev.modulo, ev.tabla, ev.operacion, ev.registro, ev.ip]);
+    this.reportesApi.exportarCsv('reporte-auditoria.csv', cabeceras, filas);
   }
 }
