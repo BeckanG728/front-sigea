@@ -371,6 +371,39 @@
   </div>
 </app-modal>
 
+<!-- Modal QR (primera configuración de Google Authenticator) -->
+<app-modal [visible]="paso() === 'qrcode'" title="Configurar Google Authenticator" (close)="volverAConfirmacion()">
+  <div style="text-align:center">
+    <p style="margin-bottom:12px">
+      Escanea este código QR con <strong>Google Authenticator</strong><br />
+      para configurar la verificación de doble factor.
+    </p>
+
+    @if (loadingQr()) {
+      <div class="alert alert--info" style="margin-top:12px">
+        <i class="bi-arrow-repeat spinner"></i>
+        <span>Generando código QR...</span>
+      </div>
+    } @else if (errorQr()) {
+      <div class="alert alert--danger" style="margin-top:8px">
+        <i class="bi-exclamation-triangle alert__icon"></i>
+        <span>{{ errorQr() }}</span>
+      </div>
+    } @else if (qrCodeDataUrl()) {
+      <img [src]="qrCodeDataUrl()" alt="Código QR de Google Authenticator" style="width:220px;height:220px;margin:0 auto" />
+    }
+
+    <div class="flex gap-2 mt-3" style="justify-content:center">
+      <button class="btn btn--outline" (click)="volverAConfirmacion()">
+        <i class="bi-arrow-left"></i> Volver
+      </button>
+      <button class="btn btn--dark" [disabled]="loadingQr() || !qrCodeDataUrl()" (click)="continuarDesdeQr()">
+        OK
+      </button>
+    </div>
+  </div>
+</app-modal>
+
 <!-- Modal 2FA -->
 <app-modal [visible]="paso() === 'twofactor'" title="Verificación de doble factor" (close)="volverAConfirmacion()">
   <div style="text-align:center">
@@ -386,6 +419,11 @@
       <input type="text" #codeInput2fa maxlength="6" placeholder="000000"
              style="text-align:center;font-size:24px;letter-spacing:8px;font-family:monospace;width:100%" />
     </div>
+    @if (previewData()?.totpVerificado === false) {
+      <p style="margin-top:8px">
+        <a href="javascript:void(0)" (click)="reabrirQr()">¿Olvidaste configurar Google Authenticator?</a>
+      </p>
+    }
     @if (error2FA()) {
       <div class="alert alert--danger" style="margin-top:8px">
         <i class="bi-exclamation-triangle alert__icon"></i>
