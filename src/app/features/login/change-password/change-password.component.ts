@@ -53,15 +53,4 @@ export class ChangePasswordComponent {
       }
     });
   }
-
-  cancelar(): void {
-    const role = this.auth.role();
-    if (role?.key === 'superusuario') {
-      this.router.navigate(['/su/usuarios']);
-    } else if (role?.key === 'director') {
-      this.router.navigate(['/director']);
-    } else {
-      this.router.navigate(['/secretaria/matricula']);
-    }
-  }
 }

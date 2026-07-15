@@ -10,4 +10,5 @@ export interface User {
   bloqueado: boolean;
   permisosVisibles: boolean;
   secreto2FA: string | null;
+  version: number;
 }

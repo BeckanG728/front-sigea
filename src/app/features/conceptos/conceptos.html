@@ -78,8 +78,9 @@
           </button>
         </div>
       }
-
-      <button class="btn btn--outline mt-3" (click)="nuevoConcepto()">+ Nuevo concepto</button>
+      @if(puedeCrear){
+        <button class="btn btn--outline mt-3" (click)="nuevoConcepto()">+ Nuevo concepto</button>
+      }
       <p class="note mt-2"><i class="bi-info-circle"></i> El orden define la secuencia de cobro — no se habilitará una cuota sin pagar la anterior</p>
     }
   </div>
