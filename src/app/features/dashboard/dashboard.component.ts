@@ -33,15 +33,19 @@ export class DashboardComponent {
   }
 
   async cargar(): Promise<void> {
-    const res = await this.dashboardApi.cargarResumen(this.page() - 1);
-    this.resumen.set({
-      totalMatriculas: res.totalMatriculas,
-      totalAulasActivas: res.totalAulasActivas,
-      pagosPendientes: res.pagosPendientes,
-    });
-    this.matriculas.set(res.matriculasRecientes.content);
-    this.totalPages.set(res.matriculasRecientes.totalPages);
-    this.actualizarPaginas();
+    try {
+      const res = await this.dashboardApi.cargarResumen(this.page() - 1);
+      this.resumen.set({
+        totalMatriculas: res.totalMatriculas,
+        totalAulasActivas: res.totalAulasActivas,
+        pagosPendientes: res.pagosPendientes,
+      });
+      this.matriculas.set(res.matriculasRecientes.content);
+      this.totalPages.set(res.matriculasRecientes.totalPages);
+      this.actualizarPaginas();
+    } catch (err) {
+      console.error('Error al cargar dashboard', err);
+    }
   }
 
   private actualizarPaginas(): void {
