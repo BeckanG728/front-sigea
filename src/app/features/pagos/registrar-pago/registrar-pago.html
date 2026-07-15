@@ -32,7 +32,12 @@
 
   <div class="split-layout mt-3">
     <div class="card" style="flex:1">
-      <div class="card__title">Cuotas</div>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div class="card__title" style="margin:0">Cuotas</div>
+        <button class="btn btn--sm btn--outline" (click)="exportar()" [disabled]="!alumnoSeleccionado()">
+          <i class="bi bi-download"></i> Exportar Excel
+        </button>
+      </div>
       @if (loading()) {
         <div class="text-muted" style="text-align:center;padding:12px">Cargando...</div>
       } @else {
@@ -51,14 +56,14 @@
                     } @else if (c.estado === 'BLOQUEADA') {
                       <span class="badge badge--neutral"><span>Bloqueado</span></span>
                     } @else {
-                      <span class="badge badge--danger"><span>Deuda</span></span>
+                      <span class="badge badge--danger"><span>Pendiente</span></span>
                     }
                   </td>
                   <td>
                     @if (c.estado === 'PAGADA') {
-                      <button class="btn btn--sm btn--outline" disabled><i class="bi bi-file-text"></i> Recibo</button>
+                      <span class="text-muted" style="font-size:12px">Pagado</span>
                     } @else if (c.bloqueado) {
-                      <span class="text-muted" style="font-size:12px">requiere cuota #{{ c.orden - 1 }}</span>
+                      <span class="text-muted" style="font-size:12px">Bloqueado</span>
                     } @else {
                       <button class="btn btn--sm btn--primary" (click)="abrirPago(c)">
                         <i class="bi bi-cash"></i> Pagar
@@ -67,12 +72,26 @@
                   </td>
                 </tr>
               } @empty {
-                <tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px">Sin cuotas pendientes</td></tr>
+                <tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px">Sin cuotas registradas</td></tr>
               }
             </tbody>
           </table>
         </div>
-        <p class="note mt-2"><i class="bi bi-info-circle"></i> Las cuotas bloqueadas requieren pagar la cuota anterior primero.</p>
+        <div class="flex gap-1 mt-2" style="align-items:center;justify-content:center">
+          <button class="btn btn--sm btn--outline" (click)="goToPage(page() - 1)" [disabled]="page() === 0">
+            <i class="bi bi-chevron-left"></i>
+          </button>
+          @for (p of [].constructor(totalPages()); track $index) {
+            <button class="btn btn--sm" [class.btn--dark]="$index === page()" [class.btn--outline]="$index !== page()"
+                    (click)="goToPage($index)" [disabled]="totalPages() <= 1">
+              {{ $index + 1 }}
+            </button>
+          }
+          <button class="btn btn--sm btn--outline" (click)="goToPage(page() + 1)" [disabled]="page() >= totalPages() - 1">
+            <i class="bi bi-chevron-right"></i>
+          </button>
+        </div>
+        <p class="note mt-2"><i class="bi bi-info-circle"></i> Total de registros: {{ totalElements() }}</p>
       }
     </div>
 

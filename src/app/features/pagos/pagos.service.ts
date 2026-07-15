@@ -1,5 +1,6 @@
 import { Injectable, inject, computed, signal } from '@angular/core';
 import { PagoApiService, CuotaDeudaResponse, DeudaHistorialResponse } from '../../core/services/pago-api.service';
+import { ReportesApiService } from '../../core/services/reportes-api.service';
 
 export interface CuotaView {
   codCuota: number;
@@ -50,10 +51,18 @@ function mapHistorial(r: DeudaHistorialResponse): DeudaHistorialView {
 @Injectable({ providedIn: 'root' })
 export class PagosService {
   private api = inject(PagoApiService);
+  private reportesApi = inject(ReportesApiService);
 
   readonly cuotas = computed(() => this.api.cuotas().map(mapCuota));
   readonly loading = computed(() => this.api.loading());
   readonly deudasHistorial = signal<DeudaHistorialView[]>([]);
+
+  readonly cuotasAlumno = signal<CuotaView[]>([]);
+  readonly cuotasAlumnoCompleto = signal<CuotaView[]>([]);
+  readonly cuotasAlumnoLoading = signal(false);
+  readonly cuotasPage = signal(0);
+  readonly cuotasTotalPages = signal(0);
+  readonly cuotasTotalElements = signal(0);
   readonly historialLoading = signal(false);
   readonly historialPage = signal(0);
   readonly historialTotalPages = signal(0);
@@ -63,6 +72,35 @@ export class PagosService {
 
   async listarDeudas(codAlumno: number): Promise<void> {
     await this.api.listarDeudas(codAlumno);
+  }
+
+  async listarCuotasAlumno(codAlumno: number, page: number = 0): Promise<void> {
+    this.cuotasAlumnoLoading.set(true);
+    try {
+      const [res, todas] = await Promise.all([
+        this.api.listarCuotasAlumno(codAlumno, page),
+        this.api.listarTodasCuotasAlumno(codAlumno)
+      ]);
+      this.cuotasAlumno.set(res.content.map(mapCuota));
+      this.cuotasAlumnoCompleto.set(todas.map(mapCuota));
+      this.cuotasPage.set(res.page);
+      this.cuotasTotalPages.set(res.totalPages);
+      this.cuotasTotalElements.set(res.totalElements);
+    } finally {
+      this.cuotasAlumnoLoading.set(false);
+    }
+  }
+
+  async exportarCuotasAlumno(codAlumno: number): Promise<void> {
+    const rows = await this.api.listarTodasCuotasAlumno(codAlumno);
+    const cabeceras = ['#', 'Concepto', 'Monto', 'Estado'];
+    const filas = rows.map(r => [
+      r.ordenPago,
+      r.nombreConcepto,
+      r.montoPagar,
+      r.estadoCuota === 'PENDIENTE' ? 'Pendiente' : r.estadoCuota === 'BLOQUEADA' ? 'Bloqueado' : 'Pagado'
+    ]);
+    this.reportesApi.exportarCsv('cuotas-alumno.csv', cabeceras, filas);
   }
 
   async listarHistorialGeneral(page: number = 0): Promise<void> {

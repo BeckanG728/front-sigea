@@ -5,7 +5,6 @@ import { ModalComponent } from '../../../shared/modal/modal.component';
 import { AlumnoApiService, AlumnoBusquedaResponse } from '../../../core/services/alumno-api.service';
 import { PagosService, CuotaView } from '../pagos.service';
 import { ShellStateService } from '../../../core/services/shell-state.service';
-import { PermisosService } from '../../../core/services/permisos.service';
 
 @Component({
   selector: 'app-registrar-pago',
@@ -17,7 +16,6 @@ export class RegistrarPagoComponent implements OnInit {
   private alumnoApi = inject(AlumnoApiService);
   private pagosService = inject(PagosService);
   private shellState = inject(ShellStateService);
-  private permisos = inject(PermisosService);
   private route = inject(ActivatedRoute);
 
   constructor() {
@@ -45,8 +43,13 @@ export class RegistrarPagoComponent implements OnInit {
   pagando = false;
   pagoError = '';
 
-  cuotas = this.pagosService.cuotas;
-  loading = this.pagosService.loading;
+  page = signal(0);
+
+  cuotas = this.pagosService.cuotasAlumno;
+  cuotasCompleto = this.pagosService.cuotasAlumnoCompleto;
+  loading = this.pagosService.cuotasAlumnoLoading;
+  totalPages = this.pagosService.cuotasTotalPages;
+  totalElements = this.pagosService.cuotasTotalElements;
 
   async buscarAlumno(): Promise<void> {
     const numDoc = this.dniBusqueda.trim();
@@ -63,12 +66,26 @@ export class RegistrarPagoComponent implements OnInit {
       }
       const alumno = resultados[0];
       this.alumnoSeleccionado.set(alumno);
-      await this.pagosService.listarDeudas(alumno.id);
+      this.page.set(0);
+      await this.pagosService.listarCuotasAlumno(alumno.id, 0);
     } catch (e) {
       this.error = 'Error al buscar alumno.';
     } finally {
       this.buscando = false;
     }
+  }
+
+  async goToPage(p: number): Promise<void> {
+    const alumno = this.alumnoSeleccionado();
+    if (!alumno) return;
+    this.page.set(p);
+    await this.pagosService.listarCuotasAlumno(alumno.id, p);
+  }
+
+  async exportar(): Promise<void> {
+    const alumno = this.alumnoSeleccionado();
+    if (!alumno) return;
+    await this.pagosService.exportarCuotasAlumno(alumno.id);
   }
 
   abrirPago(c: CuotaView): void {
@@ -99,7 +116,7 @@ export class RegistrarPagoComponent implements OnInit {
       this.cerrarPago();
       const alumno = this.alumnoSeleccionado();
       if (alumno) {
-        await this.pagosService.listarDeudas(alumno.id);
+        await this.pagosService.listarCuotasAlumno(alumno.id, this.page());
       }
     } catch (e: any) {
       this.pagoError = e.error?.message || 'Error al registrar el pago.';
@@ -109,13 +126,13 @@ export class RegistrarPagoComponent implements OnInit {
   }
 
   totalPagado(): number {
-    return this.cuotas()
+    return this.cuotasCompleto()
       .filter(c => c.estado === 'PAGADA')
       .reduce((s, c) => s + c.monto, 0);
   }
 
   totalPendiente(): number {
-    return this.cuotas()
+    return this.cuotasCompleto()
       .filter(c => c.estado === 'PENDIENTE')
       .reduce((s, c) => s + c.monto, 0);
   }

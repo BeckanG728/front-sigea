@@ -13,6 +13,14 @@ export interface CuotaDeudaResponse {
   anioAcademico: number;
 }
 
+export interface PaginatedCuotasResponse {
+  content: CuotaDeudaResponse[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
+
 export interface RegistrarPagoRequest {
   codCuota: number;
   montoPagado: number;
@@ -74,7 +82,23 @@ export class PagoApiService {
   async listarHistorialGeneral(page: number = 0): Promise<HistorialGeneralResponse> {
     return await lastValueFrom(
       this.http.get<HistorialGeneralResponse>(`${environment.apiUrl}/api/pagos/historial`, {
-        params: { page, size: 8 }
+        params: { page, size: 7 }
+      })
+    );
+  }
+
+  async listarCuotasAlumno(codAlumno: number, page: number = 0): Promise<PaginatedCuotasResponse> {
+    return await lastValueFrom(
+      this.http.get<PaginatedCuotasResponse>(`${environment.apiUrl}/api/pagos/cuotas`, {
+        params: { codAlumno, page, size: 3 }
+      })
+    );
+  }
+
+  async listarTodasCuotasAlumno(codAlumno: number): Promise<CuotaDeudaResponse[]> {
+    return await lastValueFrom(
+      this.http.get<CuotaDeudaResponse[]>(`${environment.apiUrl}/api/pagos/cuotas/todas`, {
+        params: { codAlumno }
       })
     );
   }
