@@ -1,20 +1,29 @@
-<div class="kpi-grid">
+<div class="module-header" style="background:var(--color-director)">
+    <span><i class="bi bi-speedometer2"></i> Dashboard</span>
+    <button class="btn btn--sm" style="background:#fff" (click)="exportar()">
+      <i class="bi bi-download"></i> Exportar
+    </button>
+  </div>
+
+  @if (resumen(); as r) {
+  <div class="kpi-grid">
     <div class="kpi">
-      <div class="kpi__value">{{ kpiMatriculas() }}</div>
-      <div class="kpi__label">Matrículas 2026</div>
+      <div class="kpi__value">{{ r.totalMatriculas }}</div>
+      <div class="kpi__label">Matrículas registradas</div>
     </div>
     <div class="kpi">
-      <div class="kpi__value">{{ kpiAulas() }}</div>
-      <div class="kpi__label">Aulas registradas</div>
+      <div class="kpi__value">{{ r.totalAulasActivas }}</div>
+      <div class="kpi__label">Aulas activas</div>
     </div>
     <div class="kpi">
-      <div class="kpi__value kpi__value--danger">{{ kpiPagosPendientes() }}</div>
+      <div class="kpi__value kpi__value--danger">{{ r.pagosPendientes }}</div>
       <div class="kpi__label">Pagos pendientes</div>
     </div>
   </div>
+  }
 
   <div class="card">
-    <div class="card__title"><i class="bi bi-clipboard-data"></i> Matrículas recientes — 2026</div>
+    <div class="card__title"><i class="bi bi-clipboard-data"></i> Matrículas recientes</div>
     <div class="table-wrap">
       <table class="table">
         <thead>
@@ -30,10 +39,32 @@
               <td><span [class]="estadoBadge(m.estado)"><span>{{ m.estado }}</span></span></td>
               <td>{{ m.registradoPor }}</td>
             </tr>
+          } @empty {
+            <tr><td colspan="6" class="text-muted" style="text-align:center;padding:24px">No hay matrículas registradas</td></tr>
           }
         </tbody>
       </table>
     </div>
+
+    @if (totalPages() > 1) {
+      <div class="pagination">
+        <button [disabled]="page() <= 1" (click)="goToPage(page() - 1)">
+          <i class="bi bi-chevron-left"></i>
+        </button>
+        @for (p of pages(); track $index) {
+          @if (p === '...') {
+            <span class="text-muted">...</span>
+          } @else {
+            <button [class.active]="page() === p" (click)="goToPage(p)">
+              {{ p }}
+            </button>
+          }
+        }
+        <button [disabled]="page() >= totalPages()" (click)="goToPage(page() + 1)">
+          <i class="bi bi-chevron-right"></i>
+        </button>
+      </div>
+    }
+
     <p class="note"><i class="bi bi-eye"></i> Vista de lectura — no se permiten modificaciones</p>
   </div>
-
