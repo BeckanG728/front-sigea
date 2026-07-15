@@ -36,7 +36,7 @@ export class DashboardApiService {
   async cargarResumen(page: number): Promise<DashboardResponse> {
     return await lastValueFrom(
       this.http.get<DashboardResponse>(this.base, {
-        params: { page: String(page), size: '7' }
+        params: { page: String(page), size: '5' }
       })
     );
   }
