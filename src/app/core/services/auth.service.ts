@@ -13,7 +13,6 @@ import { ROLE_KEY_MAP, RoleInfo, ROLES } from '../models/role.model';
 import { DataService } from './data.service';
 import { FuncionalidadNode, Permisos } from '../models/funcionalidad.model';
 import { MenuEntry, SidebarGroup, SidebarLink, SidebarSubGroup } from '../models/menu.model';
-import { getDevTreeForRole } from '../data/dev-funcionalidades';
 import { CATALOGO_MENU } from '../data/catalogo-menu';
 
 
@@ -162,9 +161,7 @@ export class AuthService {
     if (!r) return '/login';
     return '/';
   }
-
-  // ─── Funcionalidades tree ────────────────────────────────────────
-
+  
   getMenuEntries(): MenuEntry[] {
     const tree = this.funcionalidades();
     if (tree) {
@@ -299,12 +296,8 @@ export class AuthService {
         try {
           this.funcionalidades.set(JSON.parse(raw));
         } catch {
-          const fallback = getDevTreeForRole(roleKey);
-          if (fallback) this.funcionalidades.set(fallback);
+          this.funcionalidades.set(null);
         }
-      } else {
-        const fallback = getDevTreeForRole(roleKey);
-        if (fallback) this.funcionalidades.set(fallback);
       }
     }
   }
@@ -365,7 +358,6 @@ export class AuthService {
   }
 
   private getFallbackMenu(): MenuEntry[] {
-    const roleKey = this.role()?.key;
-    return getDevTreeForRole(roleKey)?.map(m => this.nodeToGroup(m)) ?? [];
+    return [];
   }
 }
