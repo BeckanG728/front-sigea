@@ -268,9 +268,22 @@ export class AuthService {
     this.isLoggedIn.set(true);
   }
 
+  private isTokenExpired(token: string): boolean {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.exp * 1000 < Date.now();
+    } catch {
+      return true;
+    }
+  }
+
   private restoreSession(): void {
     const token = localStorage.getItem('token');
     if (!token) return;
+    if (this.isTokenExpired(token)) {
+      this.logout();
+      return;
+    }
     const roleKey = localStorage.getItem('role');
     const username = localStorage.getItem('username');
     if (roleKey && username && ROLES[roleKey]) {
