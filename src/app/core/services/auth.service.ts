@@ -6,7 +6,8 @@ import { environment } from '../../../environments/environment';
 import {
   LoginRequest, LoginResponse,
   Verify2FARequest, Verify2FAResponse,
-  ChangePasswordRequest, Enable2FARequest, Enable2FAResponse
+  ChangePasswordRequest, Enable2FARequest, Enable2FAResponse,
+  QrTotpResponse
 } from '../models/auth.model';
 import { ROLE_KEY_MAP, RoleInfo, ROLES } from '../models/role.model';
 import { DataService } from './data.service';
@@ -127,6 +128,14 @@ export class AuthService {
         this.secreto2FA.set(res.secretoQr);
       })
     );
+  }
+
+  obtenerQrTotp(): Observable<QrTotpResponse> {
+    if (environment.devMode) {
+      const mockUri = 'otpauth://totp/Sigea:' + this.usuario() + '?secret=DEVFAKE1234567890&issuer=Sigea';
+      return of({ qrUri: mockUri });
+    }
+    return this.http.get<QrTotpResponse>(`${API_BASE}/api/auth/2fa/qr`);
   }
 
   logout(): void {

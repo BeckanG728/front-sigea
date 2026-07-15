@@ -22,6 +22,7 @@ export interface PreviewResponse {
   conceptos: ConceptoResponse[];
   total: number;
   cupos: { capacidad: number; matriculados: number; vacantes: number };
+  totpVerificado: boolean;
 }
 
 export interface RegisterResponse {
@@ -126,11 +127,12 @@ export class MatriculaService {
     });
   }
 
-  register(alumnoId: number, aulaId: number, anioId: number, conceptosActivosIds: number[]): Observable<RegisterResponse> {
+  register(alumnoId: number, aulaId: number, anioId: number, codigoTotp: string, conceptosActivosIds: number[]): Observable<RegisterResponse> {
     return this.http.post<RegisterResponse>(`${environment.apiUrl}/api/matricula/register`, {
       alumnoId,
       aulaId,
       anioId,
+      codigoTotp,
       conceptosActivos: conceptosActivosIds,
     });
   }

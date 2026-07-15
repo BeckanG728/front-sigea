@@ -2,6 +2,7 @@ import { Component, computed, inject, signal, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import * as QRCode from 'qrcode';
 import { ModalComponent } from '../../shared/modal/modal.component';
 import { MatriculaService, AnioAcademico, PreviewResponse, RegisterResponse } from './matricula.service';
 import { ShellStateService } from '../../core/services/shell-state.service';
@@ -11,7 +12,7 @@ import { ConceptoResponse } from '../../core/services/concepto-api.service';
 import { AulaApiService, AulaListado, Grado } from '../../core/services/aula-api.service';
 import { AlumnoBusquedaResponse } from '../../core/services/alumno-api.service';
 
-type WizardStep = 'selection' | 'confirmation' | 'twofactor' | 'success';
+type WizardStep = 'selection' | 'confirmation' | 'qrcode' | 'twofactor' | 'success';
 
 @Component({
   selector: 'app-matricula',
@@ -281,12 +282,52 @@ export class MatriculaComponent {
     this.subtotal() + this.descuentos() + this.recargos()
   );
 
-  // ─── Confirmar → 2FA ────────────────────────
+  // ─── Confirmar → QR / 2FA ────────────────────
   error2FA = signal('');
+  qrCodeDataUrl = signal<string | null>(null);
+  loadingQr = signal(false);
+  errorQr = signal('');
 
   confirmarMatricula(): void {
+    this.error2FA.set('');
+    if (this.previewData()?.totpVerificado === false) {
+      this.mostrarQr();
+    } else {
+      this.paso.set('twofactor');
+    }
+  }
+
+  private mostrarQr(): void {
+    this.errorQr.set('');
+    this.loadingQr.set(true);
+    this.paso.set('qrcode');
+
+    this.auth.obtenerQrTotp().pipe(
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe({
+      next: async res => {
+        try {
+          this.qrCodeDataUrl.set(await QRCode.toDataURL(res.qrUri));
+        } catch {
+          this.errorQr.set('No se pudo generar el código QR.');
+        } finally {
+          this.loadingQr.set(false);
+        }
+      },
+      error: () => {
+        this.loadingQr.set(false);
+        this.errorQr.set('Error al conectar con el servidor. Verifique su conexión e intente nuevamente.');
+      }
+    });
+  }
+
+  continuarDesdeQr(): void {
     this.paso.set('twofactor');
     this.error2FA.set('');
+  }
+
+  reabrirQr(): void {
+    this.mostrarQr();
   }
 
   volverAConfirmacion(): void {
@@ -300,14 +341,14 @@ export class MatriculaComponent {
       return;
     }
     this.error2FA.set('');
-    this.ejecutar();
+    this.ejecutar(code);
   }
 
   // ─── Ejecutar registro ──────────────────────
   loadingRegistro = signal(false);
   registroData = signal<RegisterResponse | null>(null);
 
-  private ejecutar(): void {
+  private ejecutar(codigoTotp: string): void {
     const conceptosActivosIds = this.conceptos()
       .filter(c => c.obligatorio || this.conceptosToggle().get(c.id) === true)
       .map(c => c.id);
@@ -318,6 +359,7 @@ export class MatriculaComponent {
       this.alumnoID(),
       this.aulaId(),
       this.anioSeleccionado(),
+      codigoTotp,
       conceptosActivosIds
     ).pipe(
       takeUntilDestroyed(this.destroyRef)
@@ -337,6 +379,8 @@ export class MatriculaComponent {
     this.previewData.set(null);
     this.registroData.set(null);
     this.error2FA.set('');
+    this.qrCodeDataUrl.set(null);
+    this.errorQr.set('');
     this.conceptosToggle.set(new Map());
     this.descuentos.set(0);
     this.recargos.set(0);

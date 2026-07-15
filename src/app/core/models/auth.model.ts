@@ -38,6 +38,10 @@ export interface Enable2FAResponse {
   dosFactorHabilitado: boolean;
 }
 
+export interface QrTotpResponse {
+  qrUri: string;
+}
+
 export interface ErrorResponse {
   error: string;
   message: string;
