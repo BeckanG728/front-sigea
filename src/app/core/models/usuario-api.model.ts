@@ -5,6 +5,7 @@ export interface UsuarioResponse {
   numeroDocumento: string;
   nombreRol: string;
   estado: boolean;
+  version: number
 }
 
 export interface SimpleResponse {
@@ -17,6 +18,7 @@ export interface CrearUsuarioRequest {
   primerApellido: string;
   numeroDocumento: string;
   idRol: number;
+  version?: number;
 }
 
 export interface PageResponse<T> {

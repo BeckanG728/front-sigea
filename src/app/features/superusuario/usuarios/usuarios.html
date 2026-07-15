@@ -178,9 +178,10 @@
     </div>
     }
     @if (modoUsuario() === 'crear') {
-    <p class="note mt-2"><i class="bi bi-info-circle"></i> El usuario se creará con la contraseña por defecto
-      configurada en <a href="/su/parametros">Parámetros</a>: <strong>{{ data.parametros().claveDefecto }}</strong>. El
-      usuario deberá cambiarla en su primer inicio de sesión.</p>
+    <p class="note mt-2"><i class="bi bi-info-circle"></i> 
+      El usuario se creará con su DNI como contraseña por defecto. El
+      usuario deberá cambiarla en su primer inicio de sesión.
+    </p>
     }
     <div class="flex gap-2 mt-3" style="justify-content:flex-end">
       <button type="button" class="btn btn--outline" (click)="usuarioModalVisible.set(false)">Cancelar</button>

@@ -31,7 +31,7 @@ export const ARBOL_PERMISOS: RamaPermiso[] = [
     hijos: [
       { nombre: 'Dashboard', key: 'dashboard', codigoBackend: 'DASHBOARD', icon: 'bi bi-speedometer2', permisosDisponibles: ['ver'] },
       { nombre: 'Aulas', key: 'aulas', codigoBackend: 'AULAS', icon: 'bi bi-door-open', permisosDisponibles: ['ver', 'crear', 'editar', 'eliminar'] },
-      { nombre: 'Alumnos', key: 'alumnos', codigoBackend: 'ALUMNOS', icon: 'bi bi-mortarboard', permisosDisponibles: ['ver', 'crear', 'editar', 'eliminar'] },
+      { nombre: 'Alumnos', key: 'alumnos', codigoBackend: 'ALUMNOS', icon: 'bi bi-mortarboard', permisosDisponibles: ['ver', 'crear'] },
       { nombre: 'Conceptos', key: 'conceptos', codigoBackend: 'CONCEPTOS', icon: 'bi bi-receipt', permisosDisponibles: ['ver', 'crear', 'editar', 'eliminar'] },
       { nombre: 'Registrar Matrícula', key: 'registrar-matricula', codigoBackend: 'MATRICULA_REGISTRAR', icon: 'bi bi-file-text', permisosDisponibles: ['ver', 'crear'] },
     ],

@@ -21,14 +21,17 @@ export class ParametrosComponent {
 
   saving = signal('');
   feedback = signal('');
-
+  
   valorEditado(id: number, valor: string): void {
+    /*
     this.data.parametrosLista.update(lista =>
       lista.map(p => p.id === id ? { ...p, valor_parametro: valor } : p)
     );
+    */
   }
 
   guardar(): void {
+    /*
     const lista = this.data.parametrosLista();
     const p = this.data.parametros();
     for (const item of lista) {
@@ -47,9 +50,11 @@ export class ParametrosComponent {
     setTimeout(() => this.saving.set(''), 1200);
     this.feedback.set('Parámetros guardados correctamente.');
     setTimeout(() => this.feedback.set(''), 3000);
+    */
   }
 
   restaurar(): void {
+    /*
     const p = this.data.parametros();
     this.data.parametrosLista.set([
       { id: 1, nombre_parametro: 'Año académico activo',     valor_parametro: String(p.anioAcademico) },
@@ -59,5 +64,6 @@ export class ParametrosComponent {
       { id: 5, nombre_parametro: 'Minutos expiración sesión', valor_parametro: String(p.minutosExpiracionSesion) },
       { id: 6, nombre_parametro: 'Clave por defecto',         valor_parametro: p.claveDefecto },
     ]);
+    */
   }
 }

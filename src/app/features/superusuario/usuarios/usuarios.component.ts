@@ -11,6 +11,7 @@ import { User } from '../../../core/models/user.model';
 import { PermisoMap } from '../../../core/models/permiso.model';
 import type { FuncionalidadNode } from '../../../core/models/funcionalidad.model';
 import { RoleResponse } from '../../../core/models/role-api.model';
+import { version } from 'xlsx';
 
 @Component({
   selector: 'app-usuarios',
@@ -54,8 +55,6 @@ export class UsuariosComponent implements OnInit, OnDestroy {
   hayPaginaAnterior = computed(() => this.paginaActual() > 0);
   hayPaginaSiguiente = computed(() => this.paginaActual() < this.totalPaginas() - 1);
 
-  //tempModulePerms = signal<Record<string, boolean>>({});
-
   modulosDisponibles = computed(() => {
     const tree = this.auth.funcionalidades();
     if (!tree) return [];
@@ -97,6 +96,7 @@ export class UsuariosComponent implements OnInit, OnDestroy {
           doc: u.numeroDocumento || '—',
           rol: u.nombreRol.toLowerCase(),
           estado: u.estado ? 'activo' : 'inactivo',
+          version: u.version,
           noEliminable: u.nombreRol === 'SUPERUSUARIO',
           bloqueado: false,
           permisosVisibles: true,
@@ -244,7 +244,7 @@ export class UsuariosComponent implements OnInit, OnDestroy {
       nombre: nombre.trim(),
       primerApellido: apellido.trim(),
       numeroDocumento: numeroDocumento.trim(),
-      idRol: rolEncontrado.idRol,
+      idRol: rolEncontrado.idRol
     };
 
     if (this.modoUsuario() === 'crear') {
@@ -262,7 +262,7 @@ export class UsuariosComponent implements OnInit, OnDestroy {
     } else {
       const u = this.editandoUsuario();
       if (!u) return;
-      this.usuariosService.actualizar(u.id, payload).subscribe({
+      this.usuariosService.actualizar(u.id, { ...payload, version: u.version }).subscribe({
         next: () => {
           this.cargarPagina(this.paginaActual());
           this.usuarioModalVisible.set(false);

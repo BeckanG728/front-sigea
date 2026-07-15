@@ -253,7 +253,7 @@ export class ConceptosComponent implements OnInit {
       );
       const destino = anios.find(a => a.anio === 2027);
       if (!destino) {
-        this.error = 'El año 2027 no está registrado. Créelo primero en la sección de años académicos.';
+        this.error = 'El año 2027 no está registrado. Créelo primero.';
         return;
       }
       const res = await this.conceptosService.clonar(this.anioAcademicoId, destino.id);
