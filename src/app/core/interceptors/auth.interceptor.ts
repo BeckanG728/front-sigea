@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
+  const router = inject(Router);
   const skipAuth = req.url.includes('/auth/login');
   if (!skipAuth) {
     const token = localStorage.getItem('token');
@@ -19,7 +20,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         localStorage.removeItem('token');
         localStorage.removeItem('role');
         localStorage.removeItem('username');
-        inject(Router).navigate(['/login']);
+        router.navigate(['/login']);
       }
       return throwError(() => err);
     })
